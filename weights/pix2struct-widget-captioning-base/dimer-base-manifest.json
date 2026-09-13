@@ -1,0 +1,50 @@
+{
+  "format": "dimer_hf_snapshot",
+  "formatVersion": 1,
+  "modelKey": "pix2struct-widget-captioning-base",
+  "modelId": "google/pix2struct-widget-captioning-base",
+  "revision": "7e99642f87127dd3aee97ea82616bbfda5e610bb",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 4499,
+      "sha256": "82b161c0f6c74a1a520c6d3094927b5cb9f4163cd9a0bed390ee1974d91c3c4b"
+    },
+    {
+      "path": "config.json",
+      "bytes": 4904,
+      "sha256": "301fe55f2135ea50cb3808d5112fa502d63e45a90b9ca0661e0d6e775f5a4b30"
+    },
+    {
+      "path": "model.safetensors",
+      "bytes": 1129177976,
+      "sha256": "0b096c351692854237aa9fca73e973e3f764f376afc84999357614bac36e2b92"
+    },
+    {
+      "path": "preprocessor_config.json",
+      "bytes": 249,
+      "sha256": "c84e4eebc84171d6069533d9f0147ec7b4afd02ab78697cb5c30f9419ef7dc45"
+    },
+    {
+      "path": "special_tokens_map.json",
+      "bytes": 2201,
+      "sha256": "5c87151ef0f72a99d1f766a4c418bd2a1f90aaa30a8e22fe5eca9641daebb64f"
+    },
+    {
+      "path": "spiece.model",
+      "bytes": 851388,
+      "sha256": "7fd650335add59bed55a432186ca0437a09e185c2d241faab468a538fe6bcf94"
+    },
+    {
+      "path": "tokenizer.json",
+      "bytes": 3265159,
+      "sha256": "0af109b23840545ef2c286073f4373959badba1faa73c8557881d5126f6287c9"
+    },
+    {
+      "path": "tokenizer_config.json",
+      "bytes": 2583,
+      "sha256": "5fdb6767a49aca48fdfa43d0279321918185fc4997bdb3ea72bf3a6301a1b43d"
+    }
+  ],
+  "totalBytes": 1133308959
+}
