@@ -7,7 +7,7 @@ date_published: "2023-03-21"
 date_published_source: "Hugging Face Hub repository creation date of the exact hosted checkpoint (`createdAt` 2023-03-21T10:13:36Z, https://huggingface.co/api/models/google/pix2struct-widget-captioning-base — the Transformers-format conversion; the Hub tags it `visual-question-answering`, this card tags the task it performs); the Pix2Struct paper and T5X checkpoints are from 2022-10 (arXiv:2210.03347), and the pinned revision is the Hub's `main` as of 2026-09-14"
 ---
 
-# Pix2Struct widget-captioning-base (DIMER package v0.1.0) — UI Widget Captioning (Inference)
+# Pix2Struct widget-captioning-base — UI Widget Captioning (Inference)
 
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-google%2Fpix2struct--widget--captioning--base-ffcc4d?style=flat)](https://huggingface.co/google/pix2struct-widget-captioning-base)
 [![Upstream GitHub](https://img.shields.io/badge/Upstream%20GitHub-google--research%2Fpix2struct-181717?style=flat&logo=github&logoColor=white)](https://github.com/google-research/pix2struct)
