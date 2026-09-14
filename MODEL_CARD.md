@@ -2,6 +2,7 @@
 license: apache-2.0
 model_card_spec: "1.1"
 pipeline_tag: image-to-text
+task: "Others - UI / Screenshot Understanding"
 base_model: google/pix2struct-widget-captioning-base
 date_published: "2023-03-21"
 date_published_source: "Hugging Face Hub repository creation date of the exact hosted checkpoint (`createdAt` 2023-03-21T10:13:36Z, https://huggingface.co/api/models/google/pix2struct-widget-captioning-base — the Transformers-format conversion; the Hub tags it `visual-question-answering`, this card tags the task it performs); the Pix2Struct paper and T5X checkpoints are from 2022-10 (arXiv:2210.03347), and the pinned revision is the Hub's `main` as of 2026-09-14"
