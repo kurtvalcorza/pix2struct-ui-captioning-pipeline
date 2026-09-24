@@ -51,9 +51,9 @@ CORPUS_COLUMNS = ("screenId", "captions", "bbox", "app_package_name", "image")
 CORPUS_FILE: dict[str, Any] = {
     "path": "data/test-00000-of-00002.parquet",
     "bytes": 95_313_640,
-    "sha256": None,
-    "rows": None,
-    "screens": None,
+    "sha256": "91d31536466cc5e6f1a15e284d766e80d1de0a94cd90bebe431135e1b51c9cb3",
+    "rows": 1811,
+    "screens": 646,
 }
 DEFAULT_CACHE_DIR = Path("weights") / "widget-captioning"
 SAMPLE_SEED = 42
