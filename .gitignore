@@ -15,3 +15,6 @@ weights/**/*.pt
 weights/**/*.pth
 weights/**/*.onnx
 weights/**/.cache/
+
+# The Widget Captioning sample shard and its extracted screenshots are fetched at run time
+weights/widget-captioning/
