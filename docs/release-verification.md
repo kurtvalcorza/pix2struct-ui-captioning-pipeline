@@ -152,10 +152,9 @@ they are history and are **not** evidence for the `E2E` blob.
 
 ## Current status
 
-**Candidate.** No execution of the `E2E` notebook is recorded, and none can be until the Widget Captioning shard's
-SHA-256 pin is recorded: `fetch_corpus` refuses to read an unpinned shard, and this repository's build environment had no
-Hub access to compute the pin (`tools/pin_corpus.py` records it and prints the realised split counts; regenerate the
-notebook afterwards). What exists: static validation (`tools/validate_release_assets.py`), the generator parity checks
+**Candidate.** No execution of the `E2E` notebook is recorded. The Widget Captioning shard is pinned (95,313,640 bytes,
+SHA-256 `91d31536466cc5e6f1a15e284d766e80d1de0a94cd90bebe431135e1b51c9cb3`, 1,811 rows over 646 screens; realised
+default split 330 / 77 / 164 widgets over 75 / 13 / 24 whole apps), so `fetch_corpus` now reads it. What exists: static validation (`tools/validate_release_assets.py`), the generator parity checks
 (`--check` OK), the offline suites and the adaptation suite on a small random Pix2Struct. The Kaggle CPU and local runs
 above were of the earlier `TASK-INFERENCE` notebook, whose inference path (staging, verification, the drawn screen) the
 `E2E` notebook still carries as Section 5, but they do not carry over to the new blob.
@@ -167,6 +166,6 @@ has not been run on this checkpoint, so the notebook records `adapted_beats_froz
 an assertion once a measured recipe is recorded here; the Section 6 assertion that the frozen model beats the
 constant caption is expected to hold for a checkpoint trained on this task but is itself unmeasured on this sample; the
 snapshot's `is_vqa` header path is disabled at load to match the upstream widget-captioning preprocessing (blue box, no
-header), and training uses the same rendering; Rico screenshots are large (typically 1440×2560), so every widget costs a
+header), and training uses the same rendering; the pinned sample's screenshots are 1080×1920 or 540×960, so every widget costs a
 full 2,048-patch encoder pass in training as well as evaluation and a GPU runtime is recommended; and the ~64-widget
 validation and ~160-widget test splits carry no dispersion estimate.
