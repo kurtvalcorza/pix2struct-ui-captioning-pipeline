@@ -363,6 +363,7 @@ def validate_identity_consistency() -> None:
 # that no document cites any more are rejected, so the allowlist cannot go stale.
 WEIGHT_DOCS = ("README.md", "MODEL_CARD.md", "docs/WEIGHTS.md")
 EXTERNAL_WEIGHT_BYTES: dict[int, str] = {
+    95_313_640: "bevaya/RICO-WidgetCaptioning 6ec57b5 data/test-00000-of-00002.parquet (pinned sample shard)",
     1_129_238_081: "upstream pytorch_model.bin, google/pix2struct-widget-captioning-base@7e99642 (not staged)",
 }
 EXTERNAL_WEIGHT_DIGESTS: dict[str, str] = {}
