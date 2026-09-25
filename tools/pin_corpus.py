@@ -28,7 +28,7 @@ def main() -> int:
     parser.add_argument("--cache", default=str(ROOT / "weights" / "widget-captioning"))
     args = parser.parse_args()
     cache = Path(args.cache)
-    path = samples._hub_download(cache)
+    path = samples._download_corpus(cache)
     size = path.stat().st_size
     if size != samples.CORPUS_FILE["bytes"]:
         pinned_size = samples.CORPUS_FILE["bytes"]
