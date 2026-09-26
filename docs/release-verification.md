@@ -135,8 +135,12 @@ they are measurements for the stated runtime, not general estimates.
 
 ### `E2E` notebook
 
-No execution of the `E2E` notebook is recorded yet. The rows below are the earlier inference-only notebook's runs;
-they are history and are **not** evidence for the `E2E` blob.
+| Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
+|---|---|---|---|---|---|
+| 2026-09-26 | `0edb5de` / `2e28896c0f42` (the PR head; `NOTEBOOK_SOURCE.repository_revision` = `metadata.dimer.generated_from` = `6583937…`) | Kaggle Tesla T4 (`kurtvalcorza/dimer-nb2-pix2struct-ui-captioning` v3; image `gcr.io/kaggle-gpu-images/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461`, `torch 2.10.0+cu128` / `transformers 5.0.0` before the pinned install, `torch 2.14.0+cu130` (CUDA 13.0) / `transformers 4.57.6` after, Python 3.12.13, `cuda:0`, float32) | Default sample path (`USE_BYOD = False`, `SPLIT_SEED = 42`, all form defaults), `Run all` from a fresh interpreter with an empty Hugging Face cache and no repository checkout (blob SHA-1 verified against GitHub before execution) | 1292.2 s | **PASSED** — 11/11 code cells ok (1 restart after install cell: the pins replaced the loaded numpy and cuda-bindings); `stage_missing_files` fetched all 8 manifest entries (1,133,308,959 bytes) at `7e99642f…`, `verify_snapshot` 8 files, no font fetch after staging; the pinned shard `data/test-00000-of-00002.parquet` fetched and accepted (1,811 rows, 646 screens, 391 apps); split 330 / 77 / 164 widgets over 75 / 13 / 24 whole apps, disjoint; the four dataset refusal probes each rejected; input manifest `accepted` with the box-outside-image finding; frozen screen captions `go to new message`, `search bar`, `go to next`, `select ana`, `profile` (identical to the inference-only runs; keywords 4/5, `settings` missing), verdict `not-measurable`; test (164 widgets) CIDEr-D constant 0.138 / colour-neighbour 0.142 / frozen 1.318 / adapted 1.356, BLEU-4 0.0 / 0.0 / 0.365 / 0.232, ROUGE-L 0.075 / 0.087 / 0.564 / 0.567, unigram F1 0.077 / 0.087 / 0.577 / 0.578; by category CIDEr-D `large-widget` (48) 2.246 → 2.291, `small-widget` (116) 0.934 → 0.969; 18,879,744 of 282,285,696 parameters trained over 893 (widget, reference) pairs from 330 widgets; validation CIDEr-D by epoch 0.777 / 0.882 / 0.881 / 0.894 (best epoch 3); adaptation 612.4 s; `adapted_beats_frozen` true; adapted screen captions `go to new message`, `search for a conversation`, `go to next`, `select ana`, `go to profile` (keywords 4/5); adapter 29 tensors, reload parity 8/8 identical captions; preserved output SHA-256: `pix2struct_ui_captioning_result.json` `cbc9c323b9bb…`, `pix2struct_ui_captioning_evaluation_report.json` `3b431f346ceb…`, `pix2struct_ui_captioning_adapter/adapter.safetensors` `f1fe5cb24a21…` (75,522,608 bytes); 205 files / 1248 MB staged; run summary and executed notebook archived under `.agent/backups/kaggle-batch-2026-09-26/out/dimer-nb2-pix2struct-ui-captioning/v3/evidence/` in the workspace |
+| 2026-09-26 | `fe3385a` / `4e74c5a4f655` (earlier blob, superseded) | Kaggle Tesla T4 (`kurtvalcorza/dimer-nb2-pix2struct-ui-captioning` v2; same image) | Default sample path, as above | 212.4 s | **FAILED** — 4/11 code cells ok; code cell 11 (Section 3, staging) raised `TypeError: _hub_download() takes 1 positional argument but 2 were given`: in the standalone notebook the carried `samples.py` cell's `_hub_download` shadowed the carried `pipeline.py` helper of the same name. Fixed by `6583937` (rename in `samples.py`) and `0edb5de` (notebook regenerated); the row above is the re-run of the fixed blob |
+
+The rows below are the earlier inference-only notebook's runs; they are history and are **not** evidence for the `E2E` blob.
 
 ### Superseded `TASK-INFERENCE` notebook — local pre-flight (not a supported runtime)
 
@@ -152,20 +156,20 @@ they are history and are **not** evidence for the `E2E` blob.
 
 ## Current status
 
-**Candidate.** No execution of the `E2E` notebook is recorded. The Widget Captioning shard is pinned (95,313,640 bytes,
-SHA-256 `91d31536466cc5e6f1a15e284d766e80d1de0a94cd90bebe431135e1b51c9cb3`, 1,811 rows over 646 screens; realised
-default split 330 / 77 / 164 widgets over 75 / 13 / 24 whole apps), so `fetch_corpus` now reads it. What exists: static validation (`tools/validate_release_assets.py`), the generator parity checks
-(`--check` OK), the offline suites and the adaptation suite on a small random Pix2Struct. The Kaggle CPU and local runs
-above were of the earlier `TASK-INFERENCE` notebook, whose inference path (staging, verification, the drawn screen) the
-`E2E` notebook still carries as Section 5, but they do not carry over to the new blob.
+**Release-grade** for blob `2e28896c` (committed at `0edb5de`, generated at `6583937`): the clean Kaggle Tesla T4 run
+above is the evidence. The Widget Captioning shard is pinned (95,313,640 bytes, SHA-256
+`91d31536466cc5e6f1a15e284d766e80d1de0a94cd90bebe431135e1b51c9cb3`, 1,811 rows over 646 screens; realised default split
+330 / 77 / 164 widgets over 75 / 13 / 24 whole apps). Any later change to the carried modules or the notebook yields a new
+blob and returns the status to Candidate.
 
 Facts a reviewer should weigh before promotion: the checkpoint was fine-tuned on Widget Captioning's training apps, so
 this is continued adaptation inside the task and a small or zero gain is the expected outcome, not a defect; the
 fine-tuning recipe (`LEARNING_RATE = 1e-5`, three epochs, two blocks, batches of four widgets with all their references)
-has not been run on this checkpoint, so the notebook records `adapted_beats_frozen` instead of asserting a gain — restore
-an assertion once a measured recipe is recorded here; the Section 6 assertion that the frozen model beats the
-constant caption is expected to hold for a checkpoint trained on this task but is itself unmeasured on this sample; the
+has been run once on this checkpoint (the T4 row above): held-out CIDEr-D rose 1.318 → 1.356, ROUGE-L 0.564 → 0.567 and
+unigram F1 0.577 → 0.578, while corpus BLEU-4 fell 0.365 → 0.232 — margins on 164 widgets from one seed and one split,
+too small to assert, so the notebook keeps recording `adapted_beats_frozen` rather than asserting a gain; the Section 6
+assertion that the frozen model beats the constant caption held on this sample (CIDEr-D 1.318 against 0.138); the
 snapshot's `is_vqa` header path is disabled at load to match the upstream widget-captioning preprocessing (blue box, no
 header), and training uses the same rendering; the pinned sample's screenshots are 1080×1920 or 540×960, so every widget costs a
 full 2,048-patch encoder pass in training as well as evaluation and a GPU runtime is recommended; and the ~64-widget
-validation and ~160-widget test splits carry no dispersion estimate.
+validation and ~160-widget test splits carry no dispersion estimate (the realised splits are 77 and 164 widgets).
