@@ -1,111 +1,130 @@
 # Release verification
 
-`tutorials/pix2struct_ui_captioning_colab.ipynb` (`TASK-INFERENCE`, **standalone** carrier) is a
-**release candidate** until the exact notebook revision has executed top-to-bottom in a clean
-supported runtime. Unit tests, JSON validation, code-cell compilation, the generator parity checks
-and `tools/validate_release_assets.py` are necessary checks but are **not** runtime evidence under
-DIMER Notebook Specification 2.0. This file is the durable release-gate record for the notebook.
+`tutorials/pix2struct_ui_captioning_colab.ipynb` (`E2E`, **standalone** carrier) is a **release candidate** until the
+exact notebook revision has executed top-to-bottom in a clean supported runtime. Unit tests, JSON validation,
+code-cell compilation, the generator parity checks and `tools/validate_release_assets.py` are necessary checks but
+are **not** runtime evidence under DIMER Notebook Specification 2.0 (REL8). This file is the durable release-gate
+record for the notebook.
 
 ## Automatic coverage (static, every pull request)
 
 CI runs `tools/validate_release_assets.py`, which checks:
 
-- notebook JSON parses; every code cell compiles as plain Python (no `%`/`!` magics); no
-  persisted outputs or execution counts; no unresolved placeholder markers; every code cell
-  is preceded by an explanatory markdown cell;
-- exactly one tutorial notebook, named in `tutorials/README.md` with its `TASK-INFERENCE`
-  profile, the notebook-spec version and the standalone carrier; `metadata.dimer` declares that
-  profile, spec `2.0`, a pedagogical mode, `standalone: true` and `generated_from` (repository, revision, module
-  SHA-256, generator);
-- the standalone carrier (ST1–ST6, PAR1–PAR3): no clone, repository install or repository import on
-  the primary path; exactly one cell tagged `embedded_module` equal to
-  `src/pix2struct_ui_captioning_pipeline/pipeline.py` after the generator's documented rewrites; the
-  inline `MANIFEST` equal to the committed snapshot manifest and the inline `PINS` equal to the
-  `pyproject.toml` runtime pins; the notebook byte-identical (on LF) to `tools/build_notebook.py`
-  output for its recorded revision; the pinned-install cell with its restart-on-stale-import guard;
-  `NOTEBOOK_SOURCE` recorded in exports;
-- `MODEL_ID`/`MODEL_REVISION` are bound only in the carried module cell (and repeated in the inline
-  manifest, which the notebook asserts against the module before fetching), the revision is a 40-hex
-  immutable commit, and the same identity string appears in `README.md`, `MODEL_CARD.md`, and
-  `docs/WEIGHTS.md` with no stray revisions;
+- notebook JSON parses; every code cell compiles as plain Python (no `%`/`!` magics); no persisted outputs or
+  execution counts; no unresolved placeholder markers; every code cell is preceded by an explanatory markdown cell;
+- exactly one tutorial notebook, named in `tutorials/README.md` with its `E2E` profile, the notebook-spec version
+  and the standalone carrier; `metadata.dimer` declares that profile, spec `2.0`, a §3.3 pedagogical mode,
+  `standalone: true` and `generated_from` (repository, revision, module SHA-256, generator);
+- the standalone carrier (ST1–ST8, PAR1–PAR4): no clone, repository install or repository import on the primary
+  path; one cell per carried module (`pipeline.py`, `metrics.py`, `samples.py`), each equal to its source after the
+  generator's documented rewrites; the inline `MANIFEST` equal to the committed 8-entry snapshot manifest and the
+  inline `PINS` equal to the `pyproject.toml` runtime pins; the notebook byte-identical (on LF) to
+  `tools/build_notebook.py` output for its recorded revision; the pinned-install cell with its
+  restart-on-stale-import guard; `NOTEBOOK_SOURCE` recorded in exports;
+- `MODEL_ID`/`MODEL_REVISION` bound only in the carried module cell (and repeated in the inline manifest, which the
+  notebook asserts against the module before fetching), the revision a 40-hex immutable commit, and the same
+  identity string in `README.md`, `MODEL_CARD.md` and `docs/WEIGHTS.md` with no stray revisions (the pinned
+  Widget Captioning dataset revision is the one other 40-hex string allowed);
 - the profile-specific public-API calls (`stage_missing_files`, `verify_snapshot`,
-  `Pix2StructWidgetCaptioningPipeline.from_pretrained(weights_dir=...)`, `validate_inputs`, `caption`,
-  `keyword_hits`, `evaluation_report`), the ceiling print (`MIN_IMAGE_SIDE`, `MAX_IMAGE_SIDE`,
-  `MAX_PATCHES`, `MIN_BOX_SIDE`, `BOX_COLOR`, `BOX_WIDTH`, `MAX_NEW_TOKENS`, `DEFAULT_MAX_NEW_TOKENS`,
-  `DECODING`), the exports, the learner-facing statements (caller-owned budget and box, no score in
-  generated text, the `truncated` flag, `not-measurable` without references, the model captions any box
-  on any image, capability exclusions) and the gated-off BYOD default listed in the validator; forbidden
-  patterns (credential-in-URL, any `git clone` / `github.com` / repository import on the primary path, a
+  `Pix2StructWidgetCaptioningPipeline.from_pretrained(weights_dir=...)`, `fetch_corpus` and `read_corpus` from
+  the pinned cache path, `build_sample_dataset(..., seed=SPLIT_SEED, image_dir=...)` / `load_byod_dataset`,
+  `validate_dataset` per split, `check_split_disjoint`, `write_dataset_jsonl`, the ceiling print, `validate_inputs`
+  with the box-outside-image refusal probe, `pipe.caption` with the sanity checks and keyword observations,
+  `evaluation_report` on the drawn screen, `constant_caption_baseline`, `colour_neighbour_baseline`, `pipe.evaluate` on the frozen
+  model and on the validation and test splits after adaptation, the per-category breakdown through `cider_d` and
+  `reference_captions`, `pipe.adapt` with its explicit hyperparameters, `evaluation_report` on the screen after
+  adaptation, `pipe.save_artifact`, `Pix2StructWidgetCaptioningPipeline.from_artifact` and the reload-parity assertion,
+  the recorded `adapted_beats_frozen` flag, and the provenance fields `weight_format`, `weight_sha256` and the
+  `corpus` block), the six expected `outputs/` paths, the learner-facing statements and the gated-off BYOD default;
+  forbidden patterns (credential-in-URL, any `git clone` / `github.com` / repository import on the primary path, a
   mutable `revision='main'`, direct `from transformers import` / `Pix2StructForConditionalGeneration` /
-  `Pix2StructProcessor` / `is_vqa` / `model.generate(` / `from huggingface_hub import` use **outside the
-  carried module cell**, `trust_remote_code=True`, `pickle.load`, `torch.load(`, `extractall(`);
-- `STATUS.md`, `README.md` and `tutorials/README.md` agree on one release-status token and no
-  document makes an unsupported release-grade, production-readiness or benchmark claim;
-- `MODEL_CARD.md` front matter (`model_card_spec: "1.1"`), single H1, required heading order, and
-  immutable provenance.
+  `Pix2StructProcessor` / `.generate(` / `from huggingface_hub import` / `urllib.request` / `pyarrow` /
+  `safetensors` / `torch.optim` / `.backward(` / `pipe._model` use **outside the carried module cells**,
+  `trust_remote_code=True`, `pickle.load`, `torch.load(`, `extractall(`);
+- `STATUS.md`, `README.md` and `tutorials/README.md` agree on one release-status token and no document makes an
+  unsupported release-grade, production-readiness or benchmark claim;
+- `MODEL_CARD.md` front matter (`model_card_spec: "1.1"`), single H1, the required headings in order, and the
+  immutable provenance section.
 
-CI also installs the pinned CPU-only torch wheel plus `transformers`, `safetensors`, `numpy` and
-`pillow`, runs `ruff check src tests tools`, `tools/build_notebook.py --check`, and the offline unit
-suite (`tests/test_pipeline.py`, `tests/test_role_helpers.py`, `tests/test_notebook_parity.py`;
-injected runner, no weights). These are source/provenance and unit checks. They are **not** execution
-evidence.
+CI also installs the pinned CPU-only torch wheel plus `transformers`, `safetensors`, `numpy`, `pillow`,
+`huggingface-hub` and `pyarrow`, runs `ruff check src tests tools`, `tools/build_notebook.py --check`, and the
+offline suites (`tests/test_pipeline.py`, `tests/test_adaptation.py`, `tests/test_role_helpers.py`,
+`tests/test_import_boundary.py`, `tests/test_notebook_parity.py`; injected runner and shard downloader,
+tiny PIL drawings, a small generated parquet shard, temporary manifests, no weights).
+`tests/test_adaptation_model.py` builds a 3-layer, 32-wide random Pix2Struct from the committed config,
+processor (header rendering off) and tokenizer and runs the real `evaluate` / `adapt` /
+`save_artifact` / `load_artifact` path on it offline; its pinned-checkpoint and CUDA cases skip unless
+`model.safetensors` is staged and a GPU is visible. These are source/provenance and unit checks. They are **not**
+execution evidence.
 
 ## Executor paths
 
 | Path | Runtime | Role |
 |---|---|---|
-| Google Colab (supported user path) | Colab CPU runtime (CUDA used automatically when present) | The runtime the tutorial is written for; a clean top-to-bottom run here is promotion evidence |
-| Kaggle CLI kernel | Kaggle CPU kernel, Python 3.12 image | Reproducible clean-room executor of the same class; the notebook is pushed verbatim plus one leading shim cell that provides `google.colab` and chdirs to a scratch directory (**no repository checkout is needed — the notebook is standalone**) |
-| Local Windows-venv harness (pre-flight only) | Workstation, sequential cell executor with a `google.colab` shim, `CUDA_VISIBLE_DEVICES=-1` | Builder pre-flight to catch defects before spending cloud runs; **not** a supported runtime and not promotion evidence |
+| Google Colab (supported user path) | Colab CPU runtime (CUDA used automatically when present; a GPU runtime is recommended for Sections 6–8) | The runtime the tutorial is written for; a clean top-to-bottom run here is promotion evidence |
+| Kaggle CLI kernel or equivalent fresh container | Fresh CPU or GPU container, Python 3.12 image; the committed notebook executed verbatim in a fresh interpreter with a `google.colab` shim and **no repository checkout** (the notebook is standalone) | Reproducible clean-room executor of the same class; promotion evidence |
+| Local harness (pre-flight only) | Workstation, sequential cell executor with a `google.colab` shim, pre-staged pins | Builder pre-flight to catch defects before spending cloud runs; **not** a supported runtime and **not** promotion evidence |
 
 ## Supported release verification procedure
 
 Before changing the registry status from `Candidate` to `Release-grade`:
 
 1. resolve the exact PR/commit head under review and confirm static CI is green;
-2. open that exact notebook revision in a new CPU (or CUDA) runtime (Colab, or the Kaggle
-   executor above) with **no repository checkout** and a clean model cache;
-3. run the notebook top-to-bottom without editing implementation cells (form parameters at their
-   defaults for the sample path: `USE_BYOD = False`, `max_new_tokens = 20`);
-4. verify that Section 1 reports `NOTEBOOK_SOURCE.repository_revision` equal to the revision recorded
-   in `metadata.dimer.generated_from` and that the installed core package versions equal the inline
-   `PINS` (= `pyproject.toml`);
+2. open that exact notebook revision in a new CPU or CUDA runtime (Colab, or a fresh-container executor above) with
+   **no repository checkout**, an empty Hugging Face cache, and no pre-staged files under the working-directory
+   snapshot `weights/pix2struct-widget-captioning-base/` or the corpus cache `weights/widget-captioning/`, and with
+   the shard's SHA-256 pin recorded in the committed `samples.py` (the reader refuses to run otherwise);
+3. run the notebook top-to-bottom without editing implementation cells (form parameters at their defaults:
+   `USE_BYOD = False`, `SPLIT_SEED = 42`, `CAPTION_MAX_TOKENS = 20`, `EPOCHS = 3`, `LEARNING_RATE = 1e-5`,
+   `BATCH_SIZE = 4`, `TRAINABLE_DECODER_LAYERS = 2`);
+4. verify that Section 1 reports `NOTEBOOK_SOURCE.repository_revision` equal to the revision recorded in
+   `metadata.dimer.generated_from` and that the installed core package versions equal the inline `PINS`
+   (= `pyproject.toml`; an interpreter restart after the install is expected where the runtime's preinstalled
+   torch or numpy differ from the pins);
 5. verify every default-path stage completes:
    - pinned runtime installed from the inline `PINS` with no GitHub access;
-   - the carried module cell executes (defines `Pix2StructWidgetCaptioningPipeline`, `validate_inputs`,
-     `evaluation_report`, `annotate_widget`, `keyword_hits`, `unigram_f1`, `verify_snapshot`,
-     `stage_missing_files`) with no import of the repository package;
-   - synthetic 540×960 messaging-app mock drawn in code with its RGB SHA-256 printed and the ceilings
-     (`MIN_IMAGE_SIDE` 16, `MAX_IMAGE_SIDE` 4096, `MAX_PATCHES` 2048, `MIN_BOX_SIDE` 4, `BOX_COLOR`
-     (0, 0, 255), `BOX_WIDTH` 3, `MAX_NEW_TOKENS` 64, `DEFAULT_MAX_NEW_TOKENS` 20, `DECODING` greedy)
-     surfaced;
-   - pinned `google/pix2struct-widget-captioning-base` acquisition at the immutable revision through the
-     carried module: the inline `MANIFEST` is asserted against the module identity and written to
-     `weights/pix2struct-widget-captioning-base/`, `stage_missing_files(WEIGHTS_DIR, allow_download=True)`
-     reports all 8 manifest entries on a clean runtime, `verify_snapshot` returns its summary dict, and
-     `from_pretrained(weights_dir=WEIGHTS_DIR)` loads from the verified directory with no further Hub
-     access (any download in the logs after staging — a `ybelkada/fonts` fetch in particular — is a
-     finding: the carried module disables the header path);
-   - `validate_inputs` writes `outputs/pix2struct_ui_captioning_input_manifest.json` (verdict `accepted`,
-     five checked boxes, one recorded rejection finding from the box-outside-image probe);
-   - `caption` returning one caption per widget with `truncated` false on the default budget; record the
-     captions (the card-pass CPU smoke produced `go to new message`, `search bar`, `go to next`, `select
-     ana`, `profile`; a materially different result is a finding to record, not a failure by itself,
-     because no metric is asserted — greedy decoding on a different device can diverge) and the keyword
-     observations;
-   - `evaluation_report` writes `outputs/pix2struct_ui_captioning_evaluation_report.json` with verdict
-     `not-measurable` (no references on the default path; `sample-sanity` with a `unigram_f1` entry only if
-     the learner supplies references), the keyword observations attached, stated as such;
-   - `outputs/pix2struct_ui_captioning_result.json`, `outputs/pix2struct_ui_captioning_captions.csv` and
-     `outputs/pix2struct_ui_captioning_annotated.png` written with `NOTEBOOK_SOURCE`, model revision,
-     model licence, runtime versions and device;
+   - the three carried module cells execute with no import of the repository package;
+   - the inline manifest asserted against the module's constants, then `stage_missing_files(WEIGHTS_DIR,
+     allow_download=True)` reporting all 8 manifest entries fetched from `google/pix2struct-widget-captioning-base` at the
+     immutable revision on a clean runtime, `verify_snapshot` returning its dict (8 files), and
+     `from_pretrained(weights_dir=WEIGHTS_DIR)` loading from the verified directory with no further Hub access (a
+     font fetch in the logs after staging is a finding);
+   - Section 4: `fetch_corpus` downloading `data/test-00000-of-00002.parquet` at the pinned dataset revision and
+     accepting it only with the pinned size and SHA-256; `read_corpus` returning the pinned row count; the seeded
+     allocation of whole apps into about 320 / 64 / 160 training, validation and test widgets with
+     `check_split_disjoint` reporting no shared app or screen, the category mix and the three dataset digests printed;
+     `outputs/pix2struct_ui_captioning_train.jsonl` written; the four dataset refusal probes each raising
+     `ValueError`;
+   - Section 5: the ceilings surfaced; the messaging-app screen drawn; `validate_inputs` writing
+     `outputs/pix2struct_ui_captioning_input_manifest.json` (verdict `accepted`, one recorded rejection finding from
+     the box-outside-image probe); `pipe.caption` on the five boxes with every sanity check `True`, the keyword
+     observations printed and `evaluation_report` verdict `not-measurable` (the inference-only notebook's runs
+     captioned `go to new message`, `search bar`, `go to next`, `select ana` and `profile`; a different caption on
+     another runtime is a finding to record, not a failure);
+   - Section 6: the constant-caption and colour-neighbour baselines and the frozen model's test score with the
+     per-category breakdown, and the cell's assertion that the frozen CIDEr-D is above the constant caption's;
+   - Section 7: `pipe.adapt` printing epoch 0 as the frozen model, 18,879,744 trainable of 282,285,696
+     parameters (29 tensors: two decoder blocks and the final layer norm), the training widget and pair counts, and
+     the epoch history with validation CIDEr-D;
+   - Section 8: `pipe.evaluate` on the validation and test splits with the four-way comparison on four metrics,
+     the per-category breakdown, `adapted_beats_frozen` printed and
+     `outputs/pix2struct_ui_captioning_evaluation_report.json` written (the gain is **recorded, not asserted**, until
+     a measured recipe is on file);
+   - Section 9: the five widgets captioned by the adapted model with their keyword observations,
+     `outputs/pix2struct_ui_captioning_captions.csv` written; `pipe.save_artifact` writing
+     `outputs/pix2struct_ui_captioning_adapter/{adapter.safetensors,manifest.json}` and
+     `Pix2StructWidgetCaptioningPipeline.from_artifact` reloading it with identical captions on eight test widgets
+     (the cell asserts it); `outputs/pix2struct_ui_captioning_result.json` written with `NOTEBOOK_SOURCE`, the model
+     identity and licence, the snapshot block, the `corpus` block, the inference-contract items, the comparison, the
+     artifact digest, the reload parity, the runtime versions and device;
 6. verify the exports exist and the interpretation section matches the observed path;
-7. record the notebook Git blob id, commit, runtime (platform, Python, PyTorch, Transformers, device),
-   model identifier and immutable revision, whether the model cache was clean, outcome, produced
-   outputs, and any warning or applicable `SHOULD` deviation in the table below;
+7. record the notebook Git blob id, commit, runtime (platform, Python, PyTorch, Transformers, device), the model
+   identifier and immutable revision, whether the model cache, the weights directory and the corpus cache were clean,
+   outcome, produced outputs, the observed metrics (as observations, not a benchmark), the value of
+   `adapted_beats_frozen` and any warning or applicable `SHOULD` deviation in the tables below;
 8. record no access tokens or other secrets.
 
-A known-failing default path in the supported runtime blocks release.
+A known-failing default path in the supported runtime blocks release (REL11).
 
 ## Recorded executions
 
@@ -114,13 +133,22 @@ Notebook identity is the Git blob id of `tutorials/pix2struct_ui_captioning_cola
 are the sum of per-cell times reported by the executor and include installs and the model download;
 they are measurements for the stated runtime, not general estimates.
 
-### Local pre-flight evidence (not a supported runtime)
+### `E2E` notebook
+
+| Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
+|---|---|---|---|---|---|
+| 2026-09-26 | `0edb5de` / `2e28896c0f42` (the PR head; `NOTEBOOK_SOURCE.repository_revision` = `metadata.dimer.generated_from` = `6583937…`) | Kaggle Tesla T4 (`kurtvalcorza/dimer-nb2-pix2struct-ui-captioning` v3; image `gcr.io/kaggle-gpu-images/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461`, `torch 2.10.0+cu128` / `transformers 5.0.0` before the pinned install, `torch 2.14.0+cu130` (CUDA 13.0) / `transformers 4.57.6` after, Python 3.12.13, `cuda:0`, float32) | Default sample path (`USE_BYOD = False`, `SPLIT_SEED = 42`, all form defaults), `Run all` from a fresh interpreter with an empty Hugging Face cache and no repository checkout (blob SHA-1 verified against GitHub before execution) | 1292.2 s | **PASSED** — 11/11 code cells ok (1 restart after install cell: the pins replaced the loaded numpy and cuda-bindings); `stage_missing_files` fetched all 8 manifest entries (1,133,308,959 bytes) at `7e99642f…`, `verify_snapshot` 8 files, no font fetch after staging; the pinned shard `data/test-00000-of-00002.parquet` fetched and accepted (1,811 rows, 646 screens, 391 apps); split 330 / 77 / 164 widgets over 75 / 13 / 24 whole apps, disjoint; the four dataset refusal probes each rejected; input manifest `accepted` with the box-outside-image finding; frozen screen captions `go to new message`, `search bar`, `go to next`, `select ana`, `profile` (identical to the inference-only runs; keywords 4/5, `settings` missing), verdict `not-measurable`; test (164 widgets) CIDEr-D constant 0.138 / colour-neighbour 0.142 / frozen 1.318 / adapted 1.356, BLEU-4 0.0 / 0.0 / 0.365 / 0.232, ROUGE-L 0.075 / 0.087 / 0.564 / 0.567, unigram F1 0.077 / 0.087 / 0.577 / 0.578; by category CIDEr-D `large-widget` (48) 2.246 → 2.291, `small-widget` (116) 0.934 → 0.969; 18,879,744 of 282,285,696 parameters trained over 893 (widget, reference) pairs from 330 widgets; validation CIDEr-D by epoch 0.777 / 0.882 / 0.881 / 0.894 (best epoch 3); adaptation 612.4 s; `adapted_beats_frozen` true; adapted screen captions `go to new message`, `search for a conversation`, `go to next`, `select ana`, `go to profile` (keywords 4/5); adapter 29 tensors, reload parity 8/8 identical captions; preserved output SHA-256: `pix2struct_ui_captioning_result.json` `cbc9c323b9bb…`, `pix2struct_ui_captioning_evaluation_report.json` `3b431f346ceb…`, `pix2struct_ui_captioning_adapter/adapter.safetensors` `f1fe5cb24a21…` (75,522,608 bytes); 205 files / 1248 MB staged; run summary and executed notebook archived under `.agent/backups/kaggle-batch-2026-09-26/out/dimer-nb2-pix2struct-ui-captioning/v3/evidence/` in the workspace |
+| 2026-09-26 | `fe3385a` / `4e74c5a4f655` (earlier blob, superseded) | Kaggle Tesla T4 (`kurtvalcorza/dimer-nb2-pix2struct-ui-captioning` v2; same image) | Default sample path, as above | 212.4 s | **FAILED** — 4/11 code cells ok; code cell 11 (Section 3, staging) raised `TypeError: _hub_download() takes 1 positional argument but 2 were given`: in the standalone notebook the carried `samples.py` cell's `_hub_download` shadowed the carried `pipeline.py` helper of the same name. Fixed by `6583937` (rename in `samples.py`) and `0edb5de` (notebook regenerated); the row above is the re-run of the fixed blob |
+
+The rows below are the earlier inference-only notebook's runs; they are history and are **not** evidence for the `E2E` blob.
+
+### Superseded `TASK-INFERENCE` notebook — local pre-flight (not a supported runtime)
 
 | Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
 |---|---|---|---|---|---|
 | 2026-09-14 | notebook blob `5baeb8f48104` (commit `e764380`, generated at `2fe75b2`; `NOTEBOOK_SOURCE.repository_revision` = `2fe75b2…`) | Local Windows-venv harness (`run_nb_local.py`: nbclient 0.11.0, fresh `python3` kernel, `CUDA_VISIBLE_DEVICES=-1`, `DIMER_NOTEBOOK_CI_PREINSTALLED=1`), Python 3.12.10, torch 2.14.0+cu130, transformers 4.57.6 | Default synthetic path, all 8 code cells: pinned install skipped (pre-installed), `stage_missing_files` fetched all 8 manifest entries (1.13 GB) from the Hub cache at the pinned revision into the scratch `weights/`, `verify_snapshot` PASS (8 files), no font or other download in the log after staging, five `caption` calls → `go to new message`, `search bar`, `go to next`, `select ana`, `profile` (2–5 tokens, none truncated, 2.03–2.59 s), keyword observations 4/5 (`settings` absent — the recorded miss), `evaluation_report` `not-measurable` (no references, by design), mock digest `364146e9…` (Pillow 11.3.0 bundled font), 5 outputs written | 123.3 s | PASS — pre-flight only; not promotion evidence |
 
-### Manual clean-runtime evidence
+### Superseded `TASK-INFERENCE` notebook — manual clean-runtime evidence
 
 | Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
 |---|---|---|---|---|---|
@@ -128,18 +156,20 @@ they are measurements for the stated runtime, not general estimates.
 
 ## Current status
 
-No clean-runtime execution in a **supported** runtime (Colab or Kaggle) has been recorded yet; clean execution evidence is now recorded below. What exists: static validation (`tools/validate_release_assets.py`), the generator parity
-checks (`--check` OK), the offline unit suite, and one **local fresh-kernel execution** of the generated
-notebook (table above) that exercised the standalone carrier, the real `hf_hub_download` staging path
-into an empty `weights/` directory, verification, captioning, the evaluation report and every export —
-which is necessary but not promotion evidence because the workstation is not a supported runtime. The
-registry status remains **Candidate** until a reviewer confirms a recorded supported-runtime run against
-the notebook blob under review and an integrator promotes it. Facts a reviewer should weigh: the CUDA
-path has not been executed; the snapshot's `is_vqa` header path is disabled at load to match the upstream
-widget-captioning preprocessing (blue box, no header), which also removes the stock processor's
-inference-time font download — an empty rendered header produced near-identical captions in the probe but
-was not adopted; the tutorial sample is a flat mock, not an Android screenshot, and the model's recorded
-miss on it (`go to next` for a gear icon) is kept; a box on a blank image or on noise still yields a
-fluent widget caption, so a box that encloses nothing gives no signal; the outline colour matters (red or
-black outlines degraded four of five captions in the probe); and each widget costs a 2048-patch encoder
-pass (~2.0–2.4 s on the reference CPU), so a screen with many widgets scales linearly.
+**Release-grade** for blob `2e28896c` (committed at `0edb5de`, generated at `6583937`): the clean Kaggle Tesla T4 run
+above is the evidence. The Widget Captioning shard is pinned (95,313,640 bytes, SHA-256
+`91d31536466cc5e6f1a15e284d766e80d1de0a94cd90bebe431135e1b51c9cb3`, 1,811 rows over 646 screens; realised default split
+330 / 77 / 164 widgets over 75 / 13 / 24 whole apps). Any later change to the carried modules or the notebook yields a new
+blob and returns the status to Candidate.
+
+Facts a reviewer should weigh before promotion: the checkpoint was fine-tuned on Widget Captioning's training apps, so
+this is continued adaptation inside the task and a small or zero gain is the expected outcome, not a defect; the
+fine-tuning recipe (`LEARNING_RATE = 1e-5`, three epochs, two blocks, batches of four widgets with all their references)
+has been run once on this checkpoint (the T4 row above): held-out CIDEr-D rose 1.318 → 1.356, ROUGE-L 0.564 → 0.567 and
+unigram F1 0.577 → 0.578, while corpus BLEU-4 fell 0.365 → 0.232 — margins on 164 widgets from one seed and one split,
+too small to assert, so the notebook keeps recording `adapted_beats_frozen` rather than asserting a gain; the Section 6
+assertion that the frozen model beats the constant caption held on this sample (CIDEr-D 1.318 against 0.138); the
+snapshot's `is_vqa` header path is disabled at load to match the upstream widget-captioning preprocessing (blue box, no
+header), and training uses the same rendering; the pinned sample's screenshots are 1080×1920 or 540×960, so every widget costs a
+full 2,048-patch encoder pass in training as well as evaluation and a GPU runtime is recommended; and the ~64-widget
+validation and ~160-widget test splits carry no dispersion estimate (the realised splits are 77 and 164 widgets).
