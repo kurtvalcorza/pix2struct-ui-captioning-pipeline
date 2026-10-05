@@ -19,8 +19,7 @@ CI runs `tools/validate_release_assets.py`, which checks:
   path; one cell per carried module (`pipeline.py`, `metrics.py`, `samples.py`), each equal to its source after the
   generator's documented rewrites; the inline `MANIFEST` equal to the committed 8-entry snapshot manifest and the
   inline `PINS` equal to the `pyproject.toml` runtime pins; the notebook byte-identical (on LF) to
-  `tools/build_notebook.py` output for its recorded revision; the pinned-install cell with its
-  restart-on-stale-import guard; `NOTEBOOK_SOURCE` recorded in exports;
+  `tools/build_notebook.py` output for its recorded revision; the single kernel cell that builds (or reuses, by lock digest) the isolated hash-locked uv environment and routes every later cell to it, with no `pip install` into the kernel and no restart request; `NOTEBOOK_SOURCE` recorded in exports;
 - `MODEL_ID`/`MODEL_REVISION` bound only in the carried module cell (and repeated in the inline manifest, which the
   notebook asserts against the module before fetching), the revision a 40-hex immutable commit, and the same
   identity string in `README.md`, `MODEL_CARD.md` and `docs/WEIGHTS.md` with no stray revisions (the pinned
@@ -79,8 +78,8 @@ Before changing the registry status from `Candidate` to `Release-grade`:
    `BATCH_SIZE = 4`, `TRAINABLE_DECODER_LAYERS = 2`);
 4. verify that Section 1 reports `NOTEBOOK_SOURCE.repository_revision` equal to the revision recorded in
    `metadata.dimer.generated_from` and that the installed core package versions equal the inline `PINS`
-   (= `pyproject.toml`; an interpreter restart after the install is expected where the runtime's preinstalled
-   torch or numpy differ from the pins);
+   (= `pyproject.toml`; they are installed into the isolated environment Section 1 builds, so no interpreter restart is
+   expected);
 5. verify every default-path stage completes:
    - pinned runtime installed from the inline `PINS` with no GitHub access;
    - the three carried module cells execute with no import of the repository package;
@@ -102,7 +101,7 @@ Before changing the registry status from `Candidate` to `Release-grade`:
      captioned `go to new message`, `search bar`, `go to next`, `select ana` and `profile`; a different caption on
      another runtime is a finding to record, not a failure);
    - Section 6: the constant-caption and colour-neighbour baselines and the frozen model's test score with the
-     per-category breakdown, and the cell's assertion that the frozen CIDEr-D is above the constant caption's;
+     per-category breakdown, and the recorded verdict `frozen_beats_constant` (the frozen CIDEr-D against the constant caption's);
    - Section 7: `pipe.adapt` printing epoch 0 as the frozen model, 18,879,744 trainable of 282,285,696
      parameters (29 tensors: two decoder blocks and the final layer norm), the training widget and pair counts, and
      the epoch history with validation CIDEr-D;
