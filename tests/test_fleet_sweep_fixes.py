@@ -290,7 +290,7 @@ def test_swp_b_byod_path_fields_default_off(nb: dict) -> None:
 def test_swp_b_zip_without_records_file_is_named(nb: dict) -> None:
     """SWP-B: a BYOD zip without records.jsonl stops with a message naming the zip and the rule (no StopIteration)."""
     source = _cell_with(nb, "BYOD_PATH = ''")
-    assert "the zip holds no records.jsonl" in source and "records_file = next(p for p" not in source
+    assert "the zip must hold exactly one records.jsonl" in source and "records_file = next(p for p" not in source
 
 
 @pytest.mark.parametrize("marker", ["baseline_constant = constant_caption_baseline(", "adapt_result = pipe.adapt("])
