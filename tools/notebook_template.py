@@ -1,4 +1,4 @@
-"""Per-repository template for tools/build_notebook.py (NOTEBOOK_SPEC 2.0 §4 standalone carrier).
+"""Per-repository template for tools/build_notebook.py (NOTEBOOK_SPEC 2.2 §4 standalone carrier).
 
 Only the task-specific prose and stage cells live here. Runtime install, the embedded pipeline
 modules (pipeline.py, metrics.py, samples.py), and the model pin/stage/verify cells are produced by
@@ -20,8 +20,22 @@ TEMPLATE = {
     "notebook_name": "pix2struct_ui_captioning_colab.ipynb",
     "profile": "E2E",
     "mode": "GUIDED",
+    "isolated_runtime": True,
+    "infrastructure_labels": True,
+    # The fleet's uv isolated-environment mechanism (generator /2.2): managed CPython, a
+    # size- and SHA-256-verified uv wheel, and a lock compiled from the pyproject pins with
+    # `uv pip compile pyproject.toml --python-version 3.12 --python-platform x86_64-manylinux_2_28 --generate-hashes
+    # --only-binary :all: -o tutorials/requirements-colab.lock.txt`.
+    "managed_python": "3.12.12",
+    "uv": {
+        "version": "0.12.15",
+        "url": "https://files.pythonhosted.org/packages/1e/fd/432451d732917c49152a291de3ef171aa6b0f1a22d39780fb2c1f085ca4c/uv-0.12.15-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "bytes": 20081404,
+        "sha256": "aee9802f46bae436bd91751bb33ddeb379ef1596b5c19df193219d545d244b60",
+    },
+    "lock": "tutorials/requirements-colab.lock.txt",
     "run_all": (
-        "Selecting **Run all** in a fresh supported runtime installs the pinned dependencies, stages and digest-verifies the "
+        "Selecting **Run all** in a fresh supported runtime builds an isolated hash-locked environment from the pinned dependencies (nothing is installed into the notebook kernel, so no restart is needed), stages and digest-verifies the "
         "pinned `google/pix2struct-widget-captioning-base` snapshot (a 1.13 GB `model.safetensors`), downloads one "
         "digest-pinned parquet shard of Widget Captioning test widgets from the Hugging Face Hub (95 MB, no credential, "
         "refused on any size or SHA-256 mismatch), cuts a seeded subset of whole apps into training, validation and test "
@@ -32,17 +46,18 @@ TEMPLATE = {
         "held-out widgets again per category, re-captions the drawn screen with the adapted model, exports the adapter as "
         "safetensors with a manifest, and reloads that artifact into a fresh pipeline to verify caption parity. The default "
         "path needs no repository clone, no DIMER worker or service, no credential, no upload dialog and no configuration "
-        "edit (NOTEBOOK_SPEC 2.0 §5). A CUDA runtime is used automatically when present; the CPU path works but is slow "
-        "(every widget draws its own box and is encoded at up to 2,048 patches), and the timings of the first clean run are "
-        "recorded in `docs/release-verification.md`."
+        "edit (NOTEBOOK_SPEC 2.2 §5). A CUDA runtime is used automatically when present; the CPU path works but is slow "
+        "(every widget draws its own box and is encoded at up to 2,048 patches). The recorded Kaggle Tesla T4 run took 1,292.2 s wall "
+        "(612.4 s of it the fine-tuning); the full CPU path has not been timed and is estimated at well over an hour (see the "
+        "Prerequisites), so choose a GPU runtime."
     ),
     "byod": (
-        "After the tutorial workflow completes, set `USE_BYOD = True` in Section 4 and re-run from that cell to upload one zip "
-        "holding a `records.jsonl` (or `records.json`) of `{{id, image, box, captions}}` objects — `image` a screenshot file "
+        "After the tutorial workflow completes, set `USE_BYOD = True` and `BYOD_PATH` (a zip already in the runtime; on Colab an empty path opens an upload dialog) in Section 4, then re-run Section 4 and every code cell of Sections 5–9 in order (Sections 6 and 7 reload the frozen pipeline from the verified snapshot when `pipe` was adapted by the Widget Captioning pass, so the frozen numbers are the base model's on your screens) to supply one zip "
+        "holding a `records.jsonl` (or `records.json`) of `{id, image, box, captions}` objects — `image` a screenshot file "
         "name inside the zip, `box` the widget's `[x0, y0, x1, y1]` in pixels, `captions` one or more reference captions, "
-        "optional `image_id`, `group` (the app, so its screens stay in one split) and `category` — beside the image files. "
+        "optional `image_id`, `group` (the app, so its screens stay in one split) and `category` — beside the image files (folders inside the zip are kept, so `image` may be `images/x.png`; the records file may sit at the root or inside one folder, and image paths are relative to it). "
         "They pass through the same validation, seeded app-disjoint split, baselines, fine-tuning, held-out evaluation, "
-        "artifact export and reload-parity cells as the Widget Captioning sample. The expected schema and the ceilings are "
+        "artifact export and reload-parity cells as the Widget Captioning sample. The expected schema and the ceilings (at least 50 records when every widget is its own screen and app, so every split keeps 8; at most 5,000 records, 5,002 zip members and 2 GiB extracted) are "
         "stated in the Prerequisites and in Section 4, and uploaded files stay inside this runtime. BYOD is optional and "
         "never part of the default path."
     ),
@@ -105,6 +120,9 @@ TEMPLATE = {
         "but the box is added to the screenshot and no font is downloaded. Section 3 stages and digest-verifies the snapshot "
         "before the processor or the model is constructed."
     ),
+    "guided": {"opening": [(
+        "**Who this notebook is for.** A learner who knows basic Python, has used Colab or Jupyter and has met mobile app screens, and wants to see how an OCR-free model describes a widget on a screenshot, how short captions are scored honestly (BLEU-4, ROUGE-L, CIDEr-D) against baselines, and how a bounded fine-tuning is measured and exported. The audience is students and practitioners working on accessibility labels or UI understanding; no prior experience with Pix2Struct or fine-tuning is assumed — each term is explained where it first matters and again in the **Glossary**. A T4 GPU runtime is recommended (CPU works but the fine-tuning is slow).\n\n**Input → Model → Output.**\n\n| | |\n|---|---|\n| Input | a screenshot with one widget's box drawn on it: Widget Captioning (Rico) test widgets from one digest-pinned shard, split by whole app (330 / 77 / 164 widgets in the recorded run), or your own zip |\n| Model | Pix2Struct Widget-Captioning-base: the marked screenshot is encoded as patches and a decoder generates a short caption with greedy decoding; only the last two decoder blocks are trained |\n| Output | a caption per widget (for example `go to next`), held-out BLEU-4 / ROUGE-L / CIDEr-D overall and per `large-widget` / `small-widget` beside a constant-caption and a colour-neighbour baseline, and a safetensors adapter that reloads with identical captions |\n\n**How to use this notebook.** Choose **Runtime → Change runtime type → T4 GPU**, then **Runtime → Run all**. Run all completes in one pass: Section 1 installs nothing into the notebook's own Python, so no restart is needed (the recorded hosted run of the previous version needed one; this version removes it). Sections 1–3 are **infrastructure** — the isolated environment, the carried package and the verified snapshot — and their cells are collapsed; you may run them without studying them. The learning path starts in Section 4. Form fields (`# @param`) are the only values meant to be edited, and the defaults reproduce the recorded run. Before each principal result the notebook asks you to **Predict**; after it comes a collapsible **Check your reasoning** with a worked answer from the recorded Kaggle T4 run of 26 September 2026. **Troubleshooting**, a **Glossary** and a **Conclusion** template are at the end. Writing your predictions down is optional.\n\n**Roadmap:** 1–3 infrastructure → 4 the Rico widgets and an app-level split *(evaluation practice: leakage)* → 5 the inference contract on a drawn screen → 6 two baselines and the frozen model *(core concept: CIDEr-D on short captions)* → 7 bounded fine-tuning of two decoder blocks *(core concept: what is trained)* → 8 held-out evaluation → 9 captions again, export and reload *(engineering)* → conclude."
+    )]},
     "learning_objectives": (
         "install the pinned runtime; read what the carried pipeline, metrics and dataset modules guarantee; stage and "
         "digest-verify the immutable upstream snapshot; download a digest-pinned shard of screenshots with widget boxes and "
@@ -125,9 +143,11 @@ TEMPLATE = {
         "uploads, and any claim that a Rico split stands in for your app's screens. The repository exposes none of these."
     ),
     "prerequisites": [
-        "- **Runtime:** a fresh supported runtime (Google Colab or Jupyter, Python 3.12). The default path runs on CPU (float32) and uses CUDA automatically when available; a GPU runtime is recommended for Sections 6–8. Every widget draws its own box on its screenshot and is encoded at up to 2,048 patches, so captioning costs seconds per widget on CPU. The pinned `torch==2.14.0` install and the 1.13 GB checkpoint are the large downloads of the run; the widget shard adds 95 MB.",
+        '- **Learner:** basic Python and Colab or Jupyter familiarity; no prior experience with Pix2Struct or fine-tuning. The metrics, baselines, image-level splits, validation selection and adapters are explained where they are first used and again in the Glossary.',
+        "- **Runtime:** a fresh supported **Linux x86_64** runtime (Google Colab, Kaggle or Linux Jupyter). Section 1 builds its own Python 3.12.12 environment from a hash-locked list of manylinux wheels, so the Python version of the kernel itself does not matter and nothing is installed into it; a Windows or macOS kernel is not supported. The default path runs on CPU (float32) and uses CUDA automatically when available; a GPU runtime is recommended for Sections 6–8. Every widget draws its own box on its screenshot and is encoded at up to 2,048 patches, so captioning costs seconds per widget on CPU. The pinned `torch==2.14.0` install and the 1.13 GB checkpoint are the large downloads of the run; the widget shard adds 95 MB.",
+        "- **Duration:** the recorded Kaggle Tesla T4 run (26 September 2026) took **1,292.2 s** wall for the whole default path, 612.4 s of it the fine-tuning in Section 7. **CPU has not been timed** for the whole path: the inference-only CPU runs recorded in `docs/release-verification.md` took seconds per widget for the 2,048-patch encoder pass, and the default path captions about 1,070 widgets (Sections 5, 6, 8 and 9 plus four validation scorings) and trains three epochs over 893 (widget, reference) pairs that took 612 s on the T4, so expect **well over an hour** — an estimate derived from those figures, not a measurement. Choose **Runtime → Change runtime type → T4 GPU** before Section 1.",
         "- **Knowledge:** basic Python and PIL; what an encoder–decoder model's generated tokens are; what BLEU-4, ROUGE-L and CIDEr-D measure (n-gram precision with a brevity penalty, longest-common-subsequence F-measure, TF-IDF-weighted n-gram consensus) and why none is a human judgement; why a confident caption is not a correct one.",
-        "- **Data contract:** records are `{{id, image, box, captions}}` — a screenshot decodable by Pillow with sides between `MIN_IMAGE_SIDE` (16) and `MAX_IMAGE_SIDE` (4096) px, a widget box `[x0, y0, x1, y1]` in pixels inside the image with sides of at least `MIN_BOX_SIDE` (4) px, and one or more non-empty reference captions of at most `MAX_CAPTION_CHARS` (200) characters (`MIN_CAPTIONS` = 1); optional `image_id` names the screen, optional `group` names the app (BYOD defaults it to the screen) and optional `category` labels the breakdown. Ids match `[A-Za-z0-9_.:-]{{1,64}}` and are unique; a dataset needs 8..5,000 records; every widget of the same app lands in the same split, so a test app's screens are never trained on; every (widget, reference caption) pair is one training target. BYOD accepts one zip of screenshots plus a `records.jsonl` / `records.json` in that shape.",
+        "- **Data contract:** records are `{id, image, box, captions}` — a screenshot (a path relative to the records file; folders inside a BYOD zip are kept) decodable by Pillow with sides between `MIN_IMAGE_SIDE` (16) and `MAX_IMAGE_SIDE` (4096) px, a widget box `[x0, y0, x1, y1]` in pixels inside the image with sides of at least `MIN_BOX_SIDE` (4) px, and one or more non-empty reference captions of at most `MAX_CAPTION_CHARS` (200) characters (`MIN_CAPTIONS` = 1); optional `image_id` names the screen, optional `group` names the app (BYOD defaults it to the screen) and optional `category` labels the breakdown. Ids match `[A-Za-z0-9_.:-]{1,64}` and are unique; a dataset needs 8..5,000 records; every widget of the same app lands in the same split, so a test app's screens are never trained on; every (widget, reference caption) pair is one training target. BYOD accepts one zip of screenshots plus a `records.jsonl` / `records.json` in that shape. Because each split is validated with the same 8-record floor, the effective minimum is **50 records when every widget is its own screen and app** (the 0.15 / 0.20 validation / test fractions leave 8 and 10; fewer, larger apps need more records); at most 5,002 zip members and 2 GiB extracted; a zip is refused, with the file and the rule named, when it has no records file, more than one, a member path outside the zip's folder, a split under 8 records, or exceeds those ceilings.",
         "- **Validation is structural, not semantic:** every screenshot is opened and decoded and every box and caption checked, but nothing checks that a reference caption describes the boxed widget — a mislabelled widget is fine-tuned on without complaint.",
         "- **Privacy:** Do not upload confidential or restricted data to a hosted runtime unless you are authorized to process it there — app screenshots can show names, messages and account details. The default path uploads nothing.",
         "- **External access (data):** besides the model snapshot, the default path downloads one object from the Hub dataset repository `bevaya/RICO-WidgetCaptioning` at the immutable revision `6ec57b56…` (`data/test-00000-of-00002.parquet`, 95,313,640 bytes) and refuses it unless its size and SHA-256 match the pins carried in `samples.py`; only the screen id, caption, box, app-package and screenshot columns are read. The mirror declares CC BY 4.0 (Li et al., 2020, over Rico screens, Deka et al., 2017).",
@@ -145,35 +165,76 @@ TEMPLATE = {
                 "skipping widgets with no caption or a box under `MIN_BOX_SIDE`, and labelling each `small-widget` (under 1% of "
                 "the screen) or `large-widget`. `validate_dataset` then opens and decodes every screenshot and checks every "
                 "record against the contract, `check_split_disjoint` asserts no app and no screen is shared, and the training "
-                "split is written to `outputs/{stem}_train.jsonl` in the shape BYOD expects.\n\n"
+                "split is written to `outputs/{stem}_train.jsonl` in the shape BYOD expects. With `USE_BYOD`, the zip named by `BYOD_PATH` (or uploaded on Colab) is extracted with its folders kept, must hold exactly one `records.jsonl` / `records.json` (image paths relative to it), at most 5,002 members and 2 GiB extracted, must leave at least 8 records in every split (50 records at one widget per screen), and every refusal names the zip and the rule.\n\n"
                 "Look for: the shard's row and screen counts, the widget, screen and app counts per split, the category mix, "
                 "captions per widget, three digests, and four refusal probes — a duplicate id, a missing image file, a box "
                 "outside the screenshot and a dataset too small to split — each rejected before `torch` does anything."
+                '\n\n**Predict before running:** why split by app rather than by widget or by screen?'
             ),
             "code": (
                 "import collections\n"
                 "import hashlib\n"
                 "import io\n"
                 "import json\n"
+                "import shutil\n"
                 "import zipfile\n\n"
                 "USE_BYOD = False  # @param {{type:\"boolean\"}}\n"
+                "BYOD_PATH = ''  # @param {{type:\"string\"}}\n"
                 "SPLIT_SEED = 42  # @param {{type:\"integer\"}}\n\n"
                 "os.makedirs('outputs', exist_ok=True)\n"
-                "if USE_BYOD:\n"
-                "    from google.colab import files\n"
-                "    uploaded = files.upload()\n"
-                "    file_name, payload = next(iter(uploaded.items()))\n"
+                'def byod_file(path, kind, suffixes=()):\n'
+                '    """BYOD path first (works on Colab, Kaggle and Jupyter); on Colab an empty path opens the upload dialog."""\n'
+                '    if str(path).strip():\n'
+                '        source = Path(str(path).strip()).expanduser()\n'
+                '        if not source.is_file():\n'
+                "            raise FileNotFoundError(f'BYOD path {{str(source)!r}} does not exist or is not a file (relative paths start at {{os.getcwd()}}); give the path of one {{kind}}.')\n"
+                '    else:\n'
+                '        try:\n'
+                '            from google.colab import files\n'
+                '        except ImportError:\n'
+                "            raise RuntimeError(f'BYOD is on but its path field is empty, and the upload dialog exists only in Google Colab: copy the {{kind}} into this runtime (or attach it as a Kaggle dataset) and set the path field.') from None\n"
+                '        uploaded = files.upload()\n'
+                '        if len(uploaded) != 1:\n'
+                "            raise ValueError(f'Upload exactly one {{kind}} (received {{len(uploaded)}} files; a cancelled dialog sends none). Run this cell again.')\n"
+                '        name, payload = next(iter(uploaded.items()))\n'
+                "        source = Path('work') / Path(name).name\n"
+                '        source.parent.mkdir(parents=True, exist_ok=True)\n'
+                '        source.write_bytes(payload)\n'
+                '    if suffixes and not source.name.lower().endswith(tuple(suffixes)):\n'
+                '        raise ValueError(f\'{{source.name}}: expected a {{kind}} ending in {{" or ".join(suffixes)}}.\')\n'
+                '    return source\n'
+                '\n'
+                '\n'
+                'if USE_BYOD:\n'
+                "    byod_zip = byod_file(BYOD_PATH, 'zip of images plus records.jsonl', ('.zip',))\n"
+                '    file_name, payload = byod_zip.name, byod_zip.read_bytes()\n'
                 "    byod_dir = Path('work') / 'byod'\n"
+                "    shutil.rmtree(byod_dir, ignore_errors=True)\n"
                 "    byod_dir.mkdir(parents=True, exist_ok=True)\n"
+                "    BYOD_MAX_MEMBERS, BYOD_MAX_EXPANDED_BYTES = MAX_RECORDS + 2, 2 * 1024 ** 3  # one screenshot per record plus the records file; 2 GiB extracted\n"
                 "    with zipfile.ZipFile(io.BytesIO(payload)) as archive:\n"
-                "        for member in archive.infolist():\n"
-                "            name = Path(member.filename).name\n"
-                "            if member.is_dir() or not name or name.startswith('.'):\n"
-                "                continue\n"
-                "            (byod_dir / name).write_bytes(archive.read(member))\n"
-                "    records_file = next(p for p in (byod_dir / 'records.jsonl', byod_dir / 'records.json') if p.is_file())\n"
+                "        members = [m for m in archive.infolist() if not m.is_dir() and Path(m.filename).name and not Path(m.filename).name.startswith('.') and '__MACOSX' not in m.filename]\n"
+                "        expanded = sum(m.file_size for m in members)\n"
+                "        if len(members) > BYOD_MAX_MEMBERS or expanded > BYOD_MAX_EXPANDED_BYTES:\n"
+                "            raise ValueError(f'{{file_name}}: {{len(members)}} files and {{expanded:,}} bytes when extracted exceed the BYOD ceiling of {{BYOD_MAX_MEMBERS}} files / {{BYOD_MAX_EXPANDED_BYTES:,}} bytes (a dataset holds at most MAX_RECORDS = {{MAX_RECORDS}} records); pack fewer or smaller screenshots.')\n"
+                "        for member in members:  # folders inside the zip are kept, so records may name images as images/x.png\n"
+                "            relative = Path(member.filename.replace(chr(92), '/'))\n"
+                "            if relative.is_absolute() or '..' in relative.parts:\n"
+                "                raise ValueError(f'{{file_name}}: member {{member.filename!r}} points outside the zip (absolute path or ..); repack it with relative paths.')\n"
+                "            target = byod_dir / relative\n"
+                "            target.parent.mkdir(parents=True, exist_ok=True)\n"
+                "            target.write_bytes(archive.read(member))\n"
+                "    records_files = sorted(p for p in byod_dir.rglob('*') if p.is_file() and p.name in ('records.jsonl', 'records.json'))\n"
+                "    if len(records_files) != 1:\n"
+                "        found = [str(p.relative_to(byod_dir)) for p in records_files]\n"
+                "        raise ValueError(f'{{file_name}}: the zip must hold exactly one records.jsonl (or records.json) — at its root or inside one folder — next to the images; found {{found or \"none\"}}. Add one JSON object per line.')\n"
+                "    records_file = records_files[0]\n"
                 "    records = load_byod_dataset(records_file)\n"
-                "    splits = split_dataset(records, seed=SPLIT_SEED, base_dir=byod_dir)\n"
+                "    splits = split_dataset(records, seed=SPLIT_SEED, base_dir=records_file.parent)  # image paths are relative to the records file\n"
+                "    small = {{name: len(rows) for name, rows in splits.items() if len(rows) < MIN_RECORDS}}\n"
+                "    if small:\n"
+                "        raise ValueError(f'{{file_name}}: split(s) {{small}} hold fewer than MIN_RECORDS = {{MIN_RECORDS}} records (rows per split {{ {{name: len(rows) for name, rows in splits.items()}} }}, {{len(records)}} records in total). Every split is validated with the same floor; with the 0.15 / 0.20 validation / test fractions the smallest dataset that passes is 50 records when every widget is its own screen and app — add records or spread them over more apps.')\n"
+                "    print({{'byod_zip': file_name, 'members': len(members), 'expanded_bytes': expanded, 'records_file': str(records_file.relative_to(byod_dir)), 'records': len(records)}})\n"
                 "    data_source = 'BYOD (' + file_name + ')'\n"
                 "    raw_rows = {{'byod': len(records)}}\n"
                 "else:\n"
@@ -205,6 +266,11 @@ TEMPLATE = {
                 "        print({{'probe': name, 'verdict': 'accepted'}})\n"
                 "    except (TypeError, ValueError) as exc:\n"
                 "        print({{'probe': name, 'rejected': str(exc)[:110]}})"
+            ),
+        },
+        {
+            "md": (
+                '<details><summary>Check your reasoning</summary>Screens of one app share its style, icons and vocabulary, so a widget- or screen-level split would let the model recognise the app. The recorded run split 330 / 77 / 164 widgets over 75 / 13 / 24 whole apps with no app shared, and the four refusal probes were rejected before the model ran.</details>'
             ),
         },
         {
@@ -309,11 +375,21 @@ TEMPLATE = {
                 "reference), **CIDEr-D** (TF-IDF-weighted n-gram consensus over all references, the metric Widget Captioning is "
                 "ranked by) and the plumbing check **unigram F1**, all after lower-casing and punctuation removal. The "
                 "checkpoint was fine-tuned on Widget Captioning's training apps, so expect it well above both baselines; the "
-                "cell asserts only that it beats the constant caption. Read the per-category breakdown: icons (`small-widget`) "
+                "cell records whether it beats the constant caption as `frozen_beats_constant` (a verdict, not an assert, so a BYOD run still "
+                "exports). If `pipe` was adapted by an earlier run of Section 7, the cell first reloads the frozen pipeline from the verified "
+                "snapshot (Section 7 does the same). Read the per-category breakdown: icons (`small-widget`) "
                 "carry no text for the model to read. The measured values of the first clean run are recorded in "
                 "`docs/release-verification.md` and the model card."
+                "\n\n**Predict before running:** the checkpoint was fine-tuned on this task's training apps. Will its BLEU-4 and CIDEr-D both be far above the baselines? Which widgets will be harder, large ones or small ones?"
             ),
             "code": (
+                '# SWP-F: adapt() trains the last decoder blocks of `pipe` in place. If this pipeline was already adapted (a re-run\n'
+                '# after Section 7), start again from the pinned, digest-verified snapshot, so the frozen scores and every new\n'
+                '# adaptation begin from the frozen weights they are labelled with.\n'
+                'if pipe.adapter is not None:\n'
+                '    pipe = Pix2StructWidgetCaptioningPipeline.from_pretrained(weights_dir=WEIGHTS_DIR)\n'
+                "    print({{'reloaded_frozen_pipeline': True, 'reason': 'the previous pipeline had been adapted in place'}})\n"
+                '\n'
                 "baseline_constant = constant_caption_baseline(train_records, test_records)\n"
                 "baseline_neighbour = colour_neighbour_baseline(train_records, test_records)\n"
                 "METRICS = ('bleu4', 'rouge_l', 'cider_d', 'unigram_f1')\n"
@@ -321,7 +397,9 @@ TEMPLATE = {
                 "print({{'colour_neighbour_baseline': {{k: round(baseline_neighbour[k], 3) for k in METRICS}}, 'note': baseline_neighbour['baseline']}})\n"
                 "t0 = time.perf_counter()\n"
                 "frozen_test = pipe.evaluate(test_records, max_new_tokens=CAPTION_MAX_TOKENS)\n"
-                "print({{'frozen_model_test': {{k: round(frozen_test[k], 3) for k in METRICS}}, 'mean_words': round(frozen_test['mean_words'], 1), 'n': frozen_test['n'], 'verdict': frozen_test['verdict'], 'seconds': round(time.perf_counter() - t0, 1)}})\n"
+                "print({{'frozen_model_test': {{k: round(frozen_test[k], 3) for k in METRICS}}, 'mean_words': round(frozen_test['mean_words'], 1), 'n': frozen_test['n'], 'verdict': frozen_test['verdict'], 'adapted': frozen_test['adapted'], 'seconds': round(time.perf_counter() - t0, 1)}})\n"
+                "if frozen_test['adapted']:\n"
+                "    raise RuntimeError('the pipeline scored here carries an adapter; these are not frozen-model numbers')\n"
                 "print({{'definitions': frozen_test['definitions']}})\n\n\n"
                 "def by_category(predictions, records):\n"
                 "    \"\"\"CIDEr-D per category, with document frequencies from the whole evaluated set (as in `evaluate`).\"\"\"\n"
@@ -337,7 +415,14 @@ TEMPLATE = {
                 "print({{'by_category': {{'constant': constant_fields, 'frozen': frozen_fields}}}})\n"
                 "for record, prediction in list(zip(test_records, frozen_predictions, strict=True))[:3]:\n"
                 "    print({{'category': record['category'], 'frozen': prediction, 'references': reference_captions(record)[:2]}})\n"
-                "assert frozen_test['cider_d'] > baseline_constant['cider_d']"
+                "frozen_beats_constant = frozen_test['cider_d'] > baseline_constant['cider_d']\n"
+                "print({{'frozen_beats_constant_caption': frozen_beats_constant}})"
+
+            ),
+        },
+        {
+            "md": (
+                '<details><summary>Check your reasoning</summary>Far above on CIDEr-D: the recorded run measured constant 0.138, colour neighbour 0.142 and frozen **1.318** (BLEU-4 0.0 / 0.0 / 0.365 — short constant captions rarely share four-grams). Per category the frozen model scored 2.246 on `large-widget` (48) and 0.934 on `small-widget` (116): icons carry no text to read.</details>'
             ),
         },
         {
@@ -352,10 +437,11 @@ TEMPLATE = {
                 "is the tokenised caption with its end-of-sequence token, decoded with teacher forcing and scored with the "
                 "model's own cross-entropy (padding ignored); AdamW at a fixed learning rate, gradient clipping at 1.0, seeded "
                 "shuffling and no scheduler. Epoch 0 records the frozen model's validation metrics; every epoch is scored on the "
-                "validation widgets, and the epoch with the highest validation CIDEr-D is kept — a validation split of about "
-                "sixty widgets makes that selection noisy, which is why the held-out split in Section 8 is what the numbers are "
+                "validation widgets, and the epoch with the highest validation CIDEr-D is kept — a validation split of 77 widgets "
+                "in the recorded run (the split sizes Section 4 printed are the ones that apply to yours) makes that selection noisy, which is why the held-out split in Section 8 is what the numbers are "
                 "read from. If no epoch beats the frozen model on validation, the selector keeps epoch 0 and the adapter "
                 "reproduces the frozen captions; that outcome is reported, not hidden."
+                '\n\n**Predict before running:** will the validation CIDEr-D rise every epoch, and which epoch will be kept?'
             ),
             "code": (
                 "EPOCHS = 3  # @param {{type:\"integer\"}}\n"
@@ -370,10 +456,22 @@ TEMPLATE = {
                 "    if 'note' in entry:\n"
                 "        row['note'] = entry['note']\n"
                 "    print(row)\n\n\n"
+                '# SWP-F: adapt() trains the last decoder blocks of `pipe` in place. If this pipeline was already adapted (a re-run\n'
+                '# after Section 7), start again from the pinned, digest-verified snapshot, so the frozen scores and every new\n'
+                '# adaptation begin from the frozen weights they are labelled with.\n'
+                'if pipe.adapter is not None:\n'
+                '    pipe = Pix2StructWidgetCaptioningPipeline.from_pretrained(weights_dir=WEIGHTS_DIR)\n'
+                "    print({{'reloaded_frozen_pipeline': True, 'reason': 'the previous pipeline had been adapted in place'}})\n"
+                '\n'
                 "t0 = time.perf_counter()\n"
                 "adapt_result = pipe.adapt(train_records, val_records, epochs=EPOCHS, lr=LEARNING_RATE, batch_size=BATCH_SIZE, trainable_decoder_layers=TRAINABLE_DECODER_LAYERS, progress=report)\n"
                 "adapt_seconds = round(time.perf_counter() - t0, 1)\n"
                 "print({{'trainable_parameters': adapt_result['n_trainable'], 'total_parameters': adapt_result['n_total'], 'training_widgets': adapt_result['n_train'], 'training_pairs': adapt_result['n_pairs'], 'best_epoch': adapt_result['best_epoch'], 'selection': adapt_result['selection'], 'seconds': adapt_seconds}})"
+            ),
+        },
+        {
+            "md": (
+                '<details><summary>Check your reasoning</summary>Not monotonically: the recorded run went 0.777 (epoch 0, frozen) → 0.882 → 0.881 → **0.894**, so epoch 3 was kept, after 612.4 s on a T4 (893 widget–reference pairs from 330 widgets). Each run of this cell restarts from the frozen weights.</details>'
             ),
         },
         {
@@ -384,9 +482,17 @@ TEMPLATE = {
                 "four systems are put side by side on all four metrics, and the per-category CIDEr-D is repeated. Read it in "
                 "this order: **CIDEr-D** first (the consensus metric the epoch was selected on), then BLEU-4 and ROUGE-L, which "
                 "can move the other way when the adapted captions change length, then the `small-widget` / `large-widget` "
-                "split. `adapted_beats_frozen` records whether the held-out CIDEr-D rose. About 160 widgets from one seeded "
+                "split. `adapted_beats_frozen` records whether the held-out CIDEr-D rose — **and only that**: the recorded run was "
+                "mixed, CIDEr-D 1.318 → 1.356 (+0.038) and ROUGE-L 0.564 → 0.567 up, unigram F1 flat (0.577 → 0.578), BLEU-4 "
+                "**down** 0.365 → 0.232 (−0.133, about a third). A large BLEU-4 drop beside a small CIDEr-D gain means the adapted "
+                "captions were reworded or changed length so that exact four-grams of the references are matched less often, "
+                "while the TF-IDF-weighted n-gram consensus that CIDEr-D measures — the very metric the epoch was selected on — "
+                "rose. The cell prints the direction of every metric and `mean_words` for each system: compare the frozen and "
+                "adapted caption lengths to check the length explanation before accepting it, and read the three caption pairs. "
+                "The recorded run did not report `mean_words`, so that check has no reference number yet. About 160 widgets from one seeded "
                 "draw of one shard give **no dispersion estimate**; the deltas are sample-sanity evidence that the adaptation "
                 "contract works, not a benchmark, and a gain on Rico apps says nothing about your app until you measure it there."
+                '\n\n**Predict before running:** will every metric improve after fine-tuning?'
             ),
             "code": (
                 "adapted_test = pipe.evaluate(test_records, max_new_tokens=CAPTION_MAX_TOKENS)\n"
@@ -402,7 +508,11 @@ TEMPLATE = {
                 "for record, before, after in list(zip(test_records, frozen_predictions, adapted_predictions, strict=True))[:3]:\n"
                 "    print({{'category': record['category'], 'frozen': before, 'adapted': after, 'references': reference_captions(record)[:2]}})\n"
                 "adapted_beats_frozen = adapted_test['cider_d'] > frozen_test['cider_d']\n"
-                "print({{'adapted_beats_frozen': adapted_beats_frozen}})\n"
+                "metric_directions = {{metric: ('up' if comparison['delta_vs_frozen'][metric] > 0 else 'down' if comparison['delta_vs_frozen'][metric] < 0 else 'flat') for metric in METRICS}}\n"
+                "length_change = {{'frozen_mean_words': comparison['mean_words']['frozen'], 'adapted_mean_words': comparison['mean_words']['adapted'], 'delta': round(comparison['mean_words']['adapted'] - comparison['mean_words']['frozen'], 1)}}\n"
+                "print({{'adapted_beats_frozen': adapted_beats_frozen, 'note': 'CIDEr-D only; read metric_directions', 'metric_directions': metric_directions, 'length_change': length_change, 'scored_weights': {{'frozen_test_adapted': frozen_test['adapted'], 'adapted_test_adapted': adapted_test['adapted']}}}})\n"
+                "if adapted_beats_frozen and 'down' in metric_directions.values():\n"
+                "    print('Mixed result: CIDEr-D rose while ' + ', '.join(m for m, d in metric_directions.items() if d == 'down') + ' fell. Compare length_change and the caption pairs above before calling this a gain.')\n"
                 "evaluation_report_payload = {{\n"
                 "    'model': {{'id': MODEL_ID, 'revision': MODEL_REVISION, 'key': MODEL_KEY}},\n"
                 "    'data_source': data_source,\n"
@@ -419,10 +529,18 @@ TEMPLATE = {
                 "    'history': adapt_result['history'],\n"
                 "    'adaptation_seconds': adapt_seconds,\n"
                 "    'adapted_beats_frozen': adapted_beats_frozen,\n"
+                "    'metric_directions': metric_directions,\n"
+                "    'length_change': length_change,\n"
+                "    'frozen_beats_constant': frozen_beats_constant,\n"
                 "}}\n"
                 "with open('outputs/{stem}_evaluation_report.json', 'w', encoding='utf-8') as f:\n"
                 "    json.dump(evaluation_report_payload, f, indent=2, ensure_ascii=False)\n"
                 "print({{'report': 'outputs/{stem}_evaluation_report.json'}})"
+            ),
+        },
+        {
+            "md": (
+                "<details><summary>Check your reasoning</summary>No. In the recorded run CIDEr-D rose 1.318 → 1.356 and ROUGE-L 0.564 → 0.567, but BLEU-4 **fell** 0.365 → 0.232: the adapted captions got longer and more descriptive (`search bar` → `search for a conversation`), which CIDEr-D rewards and BLEU's four-gram precision penalises. Per category: `large-widget` 2.246 → 2.291, `small-widget` 0.934 → 0.969. Read the metrics together; one split gives no dispersion estimate.</details>"
             ),
         },
         {
@@ -440,7 +558,8 @@ TEMPLATE = {
                 "re-verifies the base snapshot, checks the artifact manifest, its digest and its exact tensor set **before** "
                 "deserialising, refuses any tensor that is not a caption-decoder tensor, and overlays the tensors onto a freshly "
                 "loaded base — a new object from files, not the in-memory model (VER2). The cell asserts identical captions on "
-                "eight test widgets (VER4)."
+                "eight test widgets (VER4) and also counts how many of those eight reloaded captions differ from the frozen model's, so parity demonstrably shows the adapter applied rather than the base reproduced (VER5; zero is expected only when the selector kept epoch 0)."
+                '\n\n**Predict before running:** will the reloaded adapter caption the eight test widgets exactly as the in-memory model did?'
             ),
             "code": (
                 "import csv\n"
@@ -467,8 +586,8 @@ TEMPLATE = {
                 "reloaded = Pix2StructWidgetCaptioningPipeline.from_artifact(artifact_dir, weights_dir=WEIGHTS_DIR, device=pipe.device)\n"
                 "before = pipe.predict(test_records[:8], max_new_tokens=CAPTION_MAX_TOKENS)\n"
                 "after = reloaded.predict(test_records[:8], max_new_tokens=CAPTION_MAX_TOKENS)\n"
-                "parity = {{'identical_captions': sum(a == b for a, b in zip(before, after, strict=True)), 'of': len(before)}}\n"
-                "print({{'reload_parity': parity, 'reloaded_best_epoch': reloaded.adapter['best_epoch']}})\n"
+                "parity = {{'identical_captions': sum(a == b for a, b in zip(before, after, strict=True)), 'of': len(before), 'reloaded_captions_differing_from_frozen': sum(f != b for f, b in zip(frozen_predictions[:8], after, strict=True))}}\n"
+                "print({{'reload_parity': parity, 'reloaded_best_epoch': reloaded.adapter['best_epoch'], 'note': 'reloaded_captions_differing_from_frozen says whether parity shows the adapter applied (> 0) or only the base reproduced (0, expected when the selector kept epoch 0)'}})\n"
                 "assert parity['identical_captions'] == parity['of']\n\n"
                 "weight_entry = next(entry for entry in MANIFEST['files'] if entry['path'] == WEIGHT_FILE)\n"
                 "result_payload = {{\n"
@@ -492,6 +611,53 @@ TEMPLATE = {
                 "print(sorted(os.listdir('outputs')))"
             ),
         },
+        {
+            "md": (
+                '<details><summary>Check your reasoning</summary>Yes: the recorded run reported 8 of 8 identical captions, with a 75,522,608-byte adapter of 29 tensors. The count of reloaded captions that differ from the frozen ones was added after that run and has no recorded number yet.</details>'
+            ),
+        },
+        {
+            "md": (
+                "### Optional experiment: the box is part of the input (off by default)\n\n"
+                "**Predict → change one thing → run → observe → explain.** The model captions whatever the blue box outlines, so the box is part "
+                "of the request. Set `RUN_BOX_EXPERIMENT = True` and run this cell: for each of the five widgets on the drawn screen it "
+                "captions the widget with its exact box, then with the box **loosened** by `BOX_LOOSEN_PX` pixels on every side (clipped to "
+                "the screen), then with the box **shifted** by the same amount so it covers a different part of the screen, and prints the "
+                "three captions side by side with the expected keywords. Predict first: which widgets keep their caption when the box is "
+                "loosened a little, and what does the model say about a box that covers nothing in particular? The cell reads `pipe` (the "
+                "adapted model) but trains nothing and writes nothing, so the default path and the exported artifact are unchanged."
+            ),
+            "code": (
+                "RUN_BOX_EXPERIMENT = False  # @param {{type:\"boolean\"}}\n"
+                "BOX_LOOSEN_PX = 24  # @param {{type:\"integer\"}}\n\n"
+                "if not RUN_BOX_EXPERIMENT:\n"
+                "    print({{'box_experiment': 'skipped (set RUN_BOX_EXPERIMENT = True to run it); nothing was trained or written'}})\n"
+                "else:\n"
+                "    width, height = screen.size\n"
+                "    def clipped(x0, y0, x1, y1):\n"
+                "        return [max(0, x0), max(0, y0), min(width, x1), min(height, y1)]\n"
+                "    experiment_rows = []\n"
+                "    for name, box, keywords in widgets:\n"
+                "        x0, y0, x1, y1 = box\n"
+                "        variants = {{'exact': list(box), 'loosened': clipped(x0 - BOX_LOOSEN_PX, y0 - BOX_LOOSEN_PX, x1 + BOX_LOOSEN_PX, y1 + BOX_LOOSEN_PX), 'shifted': clipped(x0 + (x1 - x0) + BOX_LOOSEN_PX, y0, x1 + (x1 - x0) + BOX_LOOSEN_PX, y1)}}\n"
+                "        row = {{'widget': name, 'expected_keywords': keywords}}\n"
+                "        for label, variant in variants.items():\n"
+                "            if variant[2] - variant[0] < MIN_BOX_SIDE or variant[3] - variant[1] < MIN_BOX_SIDE:\n"
+                "                row[label] = {{'box': variant, 'caption': None, 'note': 'box left the screen; skipped'}}\n"
+                "                continue\n"
+                "            answer = pipe.caption(screen, variant, max_new_tokens=CAPTION_MAX_TOKENS)\n"
+                "            row[label] = {{'box': variant, 'caption': answer['caption'], 'keywords': keyword_hits(answer['caption'], keywords)}}\n"
+                "        row['caption_survived_loosening'] = row['loosened'].get('caption') == row['exact'].get('caption')\n"
+                "        experiment_rows.append(row)\n"
+                "        print(row)\n"
+                "    print({{'box_experiment': {{'widgets': len(experiment_rows), 'caption_survived_loosening': sum(r['caption_survived_loosening'] for r in experiment_rows), 'loosen_px': BOX_LOOSEN_PX, 'trained': False, 'written': False}}}})"
+            ),
+        },
+        {
+            "md": (
+                "<details><summary>Check your reasoning</summary>No recorded run of this experiment exists, so there is no reference number. What to look for: a caption that survives a small loosening says the model keys on the widget inside the box, not on its exact edges; a shifted box still gets a fluent phrase — the model captions whatever it is given and never says \"not a widget\" — which is why a wrong or loose box is a wrong request rather than an error the model can report.</details>"
+            ),
+        },
     ],
     "closing": (
         "## Interpretation and limits\n\n"
@@ -502,13 +668,15 @@ TEMPLATE = {
         "corpus, and the numbers it produces are read on four metrics and per category against two non-neural baselines and "
         "the frozen model rather than in isolation. Whether the held-out CIDEr-D rose is recorded as `adapted_beats_frozen`, "
         "not assumed.\n\n"
-        "The test split is about 160 widgets on whole apps from one seeded draw of one shard, the validation split that picks "
-        "the epoch is about 60, the metrics are four reference-based scores (own pure-Python implementations of the "
+        "The test split is 164 widgets on whole apps from one seeded draw of one shard, the validation split that picks "
+        "the epoch is 77 (330 training widgets; Section 4 prints the sizes that apply to your run), the metrics are four reference-based scores (own pure-Python implementations of the "
         "`coco-caption` definitions, with CIDEr-D's document frequencies from the evaluated set — so its absolute value is not "
         "comparable to the benchmark's published numbers — and none a human judgement). Because the checkpoint already saw "
-        "Widget Captioning's training apps, a small or zero gain is the expected outcome and not a failure of the contract; a "
-        "learning rate that is too high overfits this little data within an epoch, which the validation-based selector reports "
-        "by keeping epoch 0. So a gain here says the contract works, not that the adapted model describes your app's widgets "
+        "Widget Captioning's training apps, a small or zero gain is the expected outcome and not a failure of the contract, and "
+        "the recorded run was **mixed**: CIDEr-D and ROUGE-L rose a little, unigram F1 was flat and BLEU-4 fell by a third, so "
+        "`adapted_beats_frozen: True` there means the selection metric rose, not that every metric did. The validation-based "
+        "selector keeps whichever epoch scored best (epoch 3 of 3 in the recorded run; no run at another learning rate is recorded "
+        "for this notebook). So a CIDEr-D gain here says the contract works, not that the adapted model describes your app's widgets "
         "better; it still captions every box — including one around nothing — with a fluent phrase. Fine-tuning on a narrow "
         "sample can also erode the model elsewhere; the drawn screen re-captioned in Section 9 is five widgets of evidence about "
         "that, not a measurement.\n\n"
@@ -523,23 +691,60 @@ TEMPLATE = {
         "fine-tuning, evaluate against two trivial baselines and the frozen model on an app-disjoint split, and emit the shown "
         "machine-readable artifacts — without the repository being reachable. It does **not** establish benchmark superiority, "
         "caption quality on any other app population or platform, or production fitness.\n\n"
-        "**Optional experiments (they do not affect the default path):** raise `LEARNING_RATE` and watch the training loss fall "
-        "while the validation CIDEr-D drops and the selector keeps an early epoch; set `TRAINABLE_DECODER_LAYERS = 1` and "
-        "compare the artifact size and the held-out score; loosen a box on the drawn screen and watch the caption follow it; or "
-        "bring your own screenshots through BYOD and read the two baselines before the adapted number.\n\n"
+        "**Optional experiments (they do not affect the default path or its exported artifact until you re-run Section 9):** each "
+        "re-run of the Section 7 cell first reloads the frozen pipeline from the verified snapshot when `pipe` already carries an "
+        "adapter, so every experiment starts from the base weights and its epoch 0 equals the Section 6 frozen validation score. "
+        "**Learning rate** — set `LEARNING_RATE` in Section 7, then re-run the Section 7 and Section 8 cells. No run at a rate other "
+        "than 1e-5 is recorded for this notebook (that run's validation CIDEr-D rose to the last epoch), so there is no predicted "
+        "outcome: watch the validation curve and which epoch the selector keeps, and treat a training loss that keeps falling while "
+        "validation CIDEr-D stalls or drops as the thing to look for. **Blocks** — set `TRAINABLE_DECODER_LAYERS = 1`, re-run the "
+        "Section 7, 8 and 9 cells and compare the artifact size (fewer tensors) and the held-out score (the artifact always "
+        "reproduces the in-memory model because no tensor outside the exported set was ever trained). **The box** — run the "
+        "box experiment cell above Section 9's checkpoint. **Your data** — BYOD (Section 4 cell, then the Sections 5–9 cells in "
+        "order) and read the two baselines before the adapted number.\n\n"
+        '## Troubleshooting\n\n'
+        '- **Section 1 stops with "This notebook needs a Linux x86_64 runtime"** — use Google Colab, Kaggle or a Linux x86_64 Jupyter server.\n'
+        '- **The uv wheel fails its size/SHA-256 check, or a download in Section 1 times out** — run Section 1 again; a complete environment is reused and an incomplete one is finished. If it repeats, `files.pythonhosted.org` or `pypi.org` is blocked or altered.\n'
+        '- **You re-ran Section 1 on its own** — nothing is lost: it keeps the running worker and every variable. After a session restart, run from the top.\n'
+        '- **"The isolated environment\'s Python process exited"** or **CUDA out of memory** — restart the session and choose **Run all** on a GPU runtime; lower `BATCH_SIZE` if it repeats (numbers will differ slightly).\n'
+        '- **Section 3 reports a size or SHA-256 mismatch, or cannot reach the Hub** — the message names the file. Delete the folder Section 3 prints as `weights_dir` and run Section 3 again.\n'
+        '- **A `sha256` or size error naming the Widget Captioning parquet shard in Section 4** — the cached file under `weights/widget-captioning/` is incomplete; delete it and run Section 4 again.\n'
+        '- **Section 6 says the frozen model is not above the constant caption, or `adapted_beats_frozen` is `False`** — a finding worth recording on the default path; on your own data read the baselines and the per-category rows first.\n'
+        '- **BYOD: "BYOD path … does not exist" / "the upload dialog exists only in Google Colab" / "Upload exactly one …"** — set `BYOD_PATH` to the zip in the runtime (it works on Kaggle and Jupyter); on Colab an empty path opens the dialog, and a cancelled dialog stops with that message.\n'
+        '- **BYOD: "the zip must hold exactly one records.jsonl", "exceed the BYOD ceiling", "points outside the zip", "hold fewer than MIN_RECORDS" or a `validate_dataset` refusal** — one records file at the root or in one folder, image paths relative to it (folders are kept), at most 5,002 members and 2 GiB extracted, at least 50 records at one widget per screen; refusals name the zip, the record index and the rule.\n'
+        '- **A re-run scores "frozen" numbers that differ from the first pass** — Sections 6 and 7 reload the frozen pipeline whenever `pipe` carries an adapter (they print `reloaded_frozen_pipeline`), so run the Section 6 cell again; `frozen_test["adapted"]` must be `False`.\n'
+        '- **BLEU-4 fell while CIDEr-D rose** — the recorded run did the same (0.365 → 0.232 against 1.318 → 1.356); read `metric_directions`, `length_change` and the caption pairs in Section 8 before calling it a gain.\n\n'
+        '## Glossary\n\n'
+        '- **Widget captioning** — a short phrase describing what a UI element does (`search bar`, `go to next`), used for accessibility labels.\n'
+        '- **Greedy decoding / `max_new_tokens`** — always taking the most likely next token, up to a caller-owned budget.\n'
+        '- **BLEU-4 / ROUGE-L / CIDEr-D / unigram F1** — n-gram precision with a brevity penalty; longest-common-subsequence F-measure; TF-IDF-weighted n-gram consensus over all references (the headline metric); word overlap as a plumbing check.\n'
+        '- **Constant-caption / colour-neighbour baseline** — one training caption (the corpus medoid) for every widget; the caption of the training widget whose box crop has the closest 3×3 mean-colour grid.\n'
+        '- **`large-widget` / `small-widget`** — widgets by box size; small ones are mostly icons with no text to read.\n'
+        '- **App-level split** — every screen of one app stays in one split, so the test apps are unseen.\n'
+        '- **Epoch / validation selection** — one pass over the training records; keeping the epoch with the best validation score (epoch 0, the frozen model, included).\n'
+        '- **Held-out test split** — records never used for training or selection; no image appears in two splits.\n'
+        '- **Adapter / reload parity** — the trained decoder tensors only, overlaid on the pinned base; the reloaded model gives identical outputs.\n'
+        '- **Isolated environment** — the separate Python 3.12.12 environment Section 1 builds from the hash lock; every later cell runs there.\n'
+        '- **BYOD** — bring your own data: your images and labels through the same cells.\n\n'
+        '## Conclusion (your notes)\n\nWrite your conclusion from **your** run (optional); the recorded run is only a reference:\n\n'
+        '- Constant ___, colour neighbour ___, frozen ___, adapted ___ (test CIDEr-D); `large-widget` ___ / `small-widget` ___.\n'
+        '- BLEU-4 moved from ___ to ___ while CIDEr-D moved from ___ to ___, which tells me ___.\n'
+        '- One widget whose caption changed: ___ → ___.\n'
+        '- One reason not to trust this gain on my own apps yet: ___.\n'
+        '\n'
         "## References\n\n"
         "- Repository README: https://github.com/kurtvalcorza/pix2struct-ui-captioning-pipeline/blob/main/README.md\n"
         "- Repository model card: https://github.com/kurtvalcorza/pix2struct-ui-captioning-pipeline/blob/main/MODEL_CARD.md\n"
         "- Weight provenance: https://github.com/kurtvalcorza/pix2struct-ui-captioning-pipeline/blob/main/docs/WEIGHTS.md\n"
         "- Upstream model (Google, Apache-2.0): https://huggingface.co/{MODEL_ID}\n"
         "- Upstream code: https://github.com/google-research/pix2struct\n"
-        "- Pix2Struct: Screenshot Parsing as Pretraining for Visual Language Understanding (Lee et al., ICML 2023): https://arxiv.org/abs/2210.03347\n"
-        "- Widget Captioning: Generating Natural Language Description for Mobile User Interface Elements (Li et al., EMNLP 2020): https://arxiv.org/abs/2010.04295 — data: https://github.com/google-research-datasets/widget-caption\n"
-        "- Rico: A Mobile App Dataset for Building Data-Driven Design Applications (Deka et al., UIST 2017): https://dl.acm.org/doi/10.1145/3126594.3126651\n"
+        "- Lee, K., Joshi, M., Turc, I., Hu, H., Liu, F., Eisenschlos, J., Khandelwal, U., Shaw, P., Chang, M.-W., & Toutanova, K. (2023). Pix2Struct: Screenshot parsing as pretraining for visual language understanding. *Proceedings of the 40th International Conference on Machine Learning* (PMLR 202). https://arxiv.org/abs/2210.03347 (https://doi.org/10.48550/arXiv.2210.03347)\n"
+        "- Li, Y., Li, G., He, L., Zheng, J., Li, H., & Guan, Z. (2020). Widget captioning: Generating natural language description for mobile user interface elements. *Proceedings of EMNLP 2020*. https://arxiv.org/abs/2010.04295 (https://doi.org/10.48550/arXiv.2010.04295) — data: https://github.com/google-research-datasets/widget-caption\n"
+        "- Deka, B., Huang, Z., Franzen, C., Hibschman, J., Afergan, D., Li, Y., Nichols, J., & Kumar, R. (2017). Rico: A mobile app dataset for building data-driven design applications. *Proceedings of UIST 2017*. https://doi.org/10.1145/3126594.3126651\n"
         "- Widget Captioning as mirrored on the Hugging Face Hub (CC BY 4.0): https://huggingface.co/datasets/bevaya/RICO-WidgetCaptioning\n"
         "- BLEU: a Method for Automatic Evaluation of Machine Translation (Papineni et al., 2002): https://aclanthology.org/P02-1040/\n"
         "- ROUGE: A Package for Automatic Evaluation of Summaries (Lin, 2004): https://aclanthology.org/W04-1013/\n"
-        "- CIDEr: Consensus-based Image Description Evaluation (Vedantam et al., 2015): https://arxiv.org/abs/1411.5726\n"
-        "- DIMER Notebook Specification 2.0 and Model Card Specification 1.1 (fleet specs in the ml-worker repository)"
+        "- Vedantam, R., Zitnick, C. L., & Parikh, D. (2015). CIDEr: Consensus-based image description evaluation. *IEEE Conference on Computer Vision and Pattern Recognition (CVPR)*. https://arxiv.org/abs/1411.5726 (https://doi.org/10.48550/arXiv.1411.5726)\n"
+        "- DIMER Notebook Specification 2.2 and Model Card Specification 1.1 (fleet specs in the ml-worker repository)"
     ),
 }

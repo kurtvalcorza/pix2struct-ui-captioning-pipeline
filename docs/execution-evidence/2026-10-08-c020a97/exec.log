@@ -1,0 +1,80 @@
+[colab] Parsing notebook '/home/kurt/colab-runs/pix2struct-ui-captioning-pipeline-c020a97-9aa8c4/pix2struct_ui_captioning_colab_c020a97_colab-cli-t4.ipynb'...
+[colab] Executing cell 1/13 - Infrastructure: build (or reuse) the isolated environment and route later cells to it...
+{'isolated_environment': '/content/dimer_isolated_env_84d5e8e284b6', 'reused': False, 'isolated_python': '3.12.12', 'kernel_python': '3.13.15', 'locked_packages': 48, 'setup_seconds': 55}
+{'routed_to': '/content/dimer_isolated_env_84d5e8e284b6/bin/python', 'worker_pid': 1758, 'worker_reused': False}
+[colab] Executing cell 2/13 - Infrastructure: record the runtime...
+{'notebook_source': {'repository': 'pix2struct-ui-captioning-pipeline', 'repository_revision': 'cbb199d52002212133d51c0f305dbab8cf515723', 'embedded_module': 'src/pix2struct_ui_captioning_pipeline/pipeline.py', 'embedded_modules': ['src/pix2struct_ui_captioning_pipeline/pipeline.py', 'src/pix2struct_ui_captioning_pipeline/metrics.py', 'src/pix2struct_ui_captioning_pipeline/samples.py'], 'module_sha256': 'bce7c1ad630600ba622338bbdf0094204a3231b6b9b01de995072eb84da5ce19', 'generator': 'build_notebook.py/2.2', 'notebook_spec': '2.2'}, 'python': '3.12.12', 'executable': '/content/dimer_isolated_env_84d5e8e284b6/bin/python', 'torch': '2.14.0+cu130', 'transformers': '4.57.6', 'cuda': True}
+[colab] Executing cell 3/13 - Infrastructure: carried module 1/3: src/pix2struct_ui_captioning_pipeline/pipeline.py (verbatim; see the note above)...
+[colab] Executing cell 4/13 - Infrastructure: carried module 2/3: src/pix2struct_ui_captioning_pipeline/metrics.py (verbatim; see the note above)...
+[colab] Executing cell 5/13 - Infrastructure: carried module 3/3: src/pix2struct_ui_captioning_pipeline/samples.py (verbatim; see the note above)...
+[colab] Executing cell 6/13 - Infrastructure: stage and digest-verify the pinned snapshot, then load the model...
+{'model_id': 'google/pix2struct-widget-captioning-base', 'revision': '7e99642f87127dd3aee97ea82616bbfda5e610bb', 'license': 'apache-2.0', 'files': 8, 'total_bytes': 1133308959}
+{'weights_dir': '/content/weights/pix2struct-widget-captioning-base', 'fetched': ['README.md', 'config.json', 'model.safetensors', 'preprocessor_config.json', 'special_tokens_map.json', 'spiece.model', 'tokenizer.json', 'tokenizer_config.json']}
+{'verified_files': 8, 'revision': '7e99642f87127dd3aee97ea82616bbfda5e610bb'}
+{'device': 'cuda:0', 'source': 'local-snapshot'}
+[colab] Executing cell 7/13 - pix2struct_ui_captioning-16...
+{'data_source': 'Widget Captioning (RICO screens, test widgets) — Widget Captioning test split (3,621 widgets) as mirrored on the Hugging Face Hub, dataset revision 6ec57b56 (CC BY 4.0 (declared by the Hub mirror; Li et al. 2020 Widget Captioning over RICO screens))', 'raw_rows': {'widgets': 1811, 'screens': 646, 'apps': 391}, 'splits': {'train': 330, 'validation': 77, 'test': 164}, 'shard_sha256': '91d31536466cc5e6...'}
+{'train': {'widgets': 330, 'screens': 118, 'apps': 75, 'categories': {'large-widget': 159, 'small-widget': 171}, 'captions_per_widget': {'min': 2, 'max': 3}, 'caption_words': {'min': 1, 'max': 15}, 'digest': 'd800b41798063dff...'}}
+{'validation': {'widgets': 77, 'screens': 24, 'apps': 13, 'categories': {'small-widget': 54, 'large-widget': 23}, 'captions_per_widget': {'min': 2, 'max': 3}, 'caption_words': {'min': 1, 'max': 9}, 'digest': 'a22fd3f70b1e37b5...'}}
+{'test': {'widgets': 164, 'screens': 42, 'apps': 24, 'categories': {'large-widget': 48, 'small-widget': 116}, 'captions_per_widget': {'min': 2, 'max': 3}, 'caption_words': {'min': 1, 'max': 15}, 'digest': '2568233cfb4d9725...'}}
+{'example': {'id': 'train-0000', 'image': '31399.jpg', 'size': [540, 960], 'box': [39, 158, 501, 227], 'category': 'large-widget', 'captions': ['add your email to login', 'email mobile field', 'this field is for entering your e-mail']}}
+{'probe': 'duplicate id', 'rejected': "duplicate id 'same'"}
+{'probe': 'missing image file', 'rejected': 'records[0]: image file not found: work/does-not-exist.png'}
+{'probe': 'box outside the screenshot', 'rejected': 'records[0]: box [0, 0, 99999, 10] lies outside the 540x960 image'}
+{'probe': 'too small', 'rejected': '3 records; 8..5000 are required'}
+[colab] Executing cell 8/13 - pix2struct_ui_captioning-19...
+{'MIN_IMAGE_SIDE': 16, 'MAX_IMAGE_SIDE': 4096, 'MAX_PATCHES': 2048, 'MIN_BOX_SIDE': 4, 'BOX_COLOR': (0, 0, 255), 'BOX_WIDTH': 3, 'MAX_NEW_TOKENS': 64, 'DEFAULT_MAX_NEW_TOKENS': 20, 'DECODING': 'greedy', 'MIN_RECORDS': 8, 'MAX_RECORDS': 5000, 'MIN_CAPTIONS': 1, 'MAX_CAPTION_CHARS': 200}
+{'screen': 'synthetic_messaging_screen_540x960.png', 'rgb_sha256': '364146e9672f7409...', 'boxes': 5, 'manifest_verdict': 'accepted', 'findings': 1}
+new-message button [90, 820, 450, 880]
+   caption: 'go to new message'  (5 tokens)  keywords: {'message': True}
+search field [30, 120, 510, 170]
+   caption: 'search bar'  (3 tokens)  keywords: {'search': True}
+gear icon [470, 25, 510, 65]
+   caption: 'go to next'  (4 tokens)  keywords: {'settings': False}
+Ana avatar [30, 200, 90, 260]
+   caption: 'select ana'  (4 tokens)  keywords: {'ana': True}
+Profile tab [420, 905, 540, 955]
+   caption: 'profile'  (2 tokens)  keywords: {'profile': True}
+{'checks': {'one_result_per_widget': True, 'captions_are_text': True, 'budget_respected': True, 'box_echoed': True}, 'frozen_screen_verdict': 'not-measurable', 'keyword_hits': [{'message': True}, {'search': True}, {'settings': False}, {'ana': True}, {'profile': True}]}
+[colab] Executing cell 9/13 - pix2struct_ui_captioning-21...
+{'constant_caption_baseline': {'bleu4': 0.0, 'rouge_l': 0.075, 'cider_d': 0.138, 'unigram_f1': 0.077}, 'n': 164, 'caption': "constant caption 'go back'"}
+{'colour_neighbour_baseline': {'bleu4': 0.0, 'rouge_l': 0.087, 'cider_d': 0.142, 'unigram_f1': 0.087}, 'note': 'colour nearest neighbour (330 training widgets)'}
+{'frozen_model_test': {'bleu4': 0.365, 'rouge_l': 0.564, 'cider_d': 1.318, 'unigram_f1': 0.577}, 'mean_words': 2.0, 'n': 164, 'verdict': 'measured', 'adapted': False, 'seconds': 84.9}
+{'definitions': {'bleu4': 'corpus-level BLEU-4: geometric mean of clipped 1..4-gram precisions against all references, times the brevity penalty against the closest reference length; in 0..1', 'rouge_l': 'mean over images of the LCS-based F-measure (beta 1.2) against the best-matching reference; in 0..1', 'cider_d': 'mean over images of the CIDEr-D consensus score: TF-IDF-weighted 1..4-gram cosine similarity to the references with a Gaussian length penalty (sigma 6), clipped counts, scaled by 10; document frequencies from the references of the evaluated set; typically 0..~1.5 on VizWiz', 'unigram_f1': 'mean over images of the bag-of-words F1 against the best-matching reference; in 0..1'}}
+{'by_category': {'constant': {'large-widget': {'n': 48, 'cider_d': 0.106}, 'small-widget': {'n': 116, 'cider_d': 0.151}}, 'frozen': {'large-widget': {'n': 48, 'cider_d': 2.246}, 'small-widget': {'n': 116, 'cider_d': 0.934}}}}
+{'category': 'large-widget', 'frozen': 'enter password', 'references': ['enter password', 'enter password']}
+{'category': 'large-widget', 'frozen': 'close window', 'references': ['close', 'close app']}
+{'category': 'large-widget', 'frozen': 'share the page', 'references': ['share to various sources', 'share with media']}
+{'frozen_beats_constant_caption': True}
+[colab] Executing cell 10/13 - pix2struct_ui_captioning-24...
+{'epoch': 0, 'train_loss': None, 'val_bleu4': 0.0, 'val_rouge_l': 0.373, 'val_cider_d': 0.777, 'val_unigram_f1': 0.377, 'val_mean_words': 2.5, 'note': 'frozen model'}
+{'epoch': 1, 'train_loss': 2.3177, 'val_bleu4': 0.0, 'val_rouge_l': 0.387, 'val_cider_d': 0.882, 'val_unigram_f1': 0.389, 'val_mean_words': 2.6}
+{'epoch': 2, 'train_loss': 2.1219, 'val_bleu4': 0.0, 'val_rouge_l': 0.388, 'val_cider_d': 0.881, 'val_unigram_f1': 0.39, 'val_mean_words': 2.6}
+{'epoch': 3, 'train_loss': 2.0395, 'val_bleu4': 0.0, 'val_rouge_l': 0.403, 'val_cider_d': 0.894, 'val_unigram_f1': 0.404, 'val_mean_words': 2.6}
+{'trainable_parameters': 18879744, 'total_parameters': 282285696, 'training_widgets': 330, 'training_pairs': 893, 'best_epoch': 3, 'selection': 'highest validation CIDEr-D', 'seconds': 654.8}
+[colab] Executing cell 11/13 - pix2struct_ui_captioning-27...
+{'bleu4': {'constant': 0.0, 'neighbour': 0.0, 'frozen': 0.365, 'adapted': 0.232}}
+{'rouge_l': {'constant': 0.075, 'neighbour': 0.087, 'frozen': 0.564, 'adapted': 0.567}}
+{'cider_d': {'constant': 0.138, 'neighbour': 0.142, 'frozen': 1.318, 'adapted': 1.356}}
+{'unigram_f1': {'constant': 0.077, 'neighbour': 0.087, 'frozen': 0.577, 'adapted': 0.578}}
+{'mean_words': {'constant': 2.0, 'neighbour': 3.2, 'frozen': 2.0, 'adapted': 2.2}}
+{'delta_vs_frozen': {'bleu4': -0.134, 'rouge_l': 0.003, 'cider_d': 0.038, 'unigram_f1': 0.001}}
+{'by_category': {'large-widget': {'n': 48, 'constant': 0.106, 'frozen': 2.246, 'adapted': 2.291}, 'small-widget': {'n': 116, 'constant': 0.151, 'frozen': 0.934, 'adapted': 0.969}}}
+{'category': 'large-widget', 'frozen': 'enter password', 'adapted': 'enter password', 'references': ['enter password', 'enter password']}
+{'category': 'large-widget', 'frozen': 'close window', 'adapted': 'close window', 'references': ['close', 'close app']}
+{'category': 'large-widget', 'frozen': 'share the page', 'adapted': 'share the page', 'references': ['share to various sources', 'share with media']}
+{'adapted_beats_frozen': True, 'note': 'CIDEr-D only; read metric_directions', 'metric_directions': {'bleu4': 'down', 'rouge_l': 'up', 'cider_d': 'up', 'unigram_f1': 'up'}, 'length_change': {'frozen_mean_words': 2.0, 'adapted_mean_words': 2.2, 'delta': 0.2}, 'scored_weights': {'frozen_test_adapted': False, 'adapted_test_adapted': True}}
+Mixed result: CIDEr-D rose while bleu4 fell. Compare length_change and the caption pairs above before calling this a gain.
+{'report': 'outputs/pix2struct_ui_captioning_evaluation_report.json'}
+[colab] Executing cell 12/13 - pix2struct_ui_captioning-30...
+{'widget': 'new-message button', 'frozen': 'go to new message', 'adapted': 'go to new message', 'adapted_keywords': {'message': True}}
+{'widget': 'search field', 'frozen': 'search bar', 'adapted': 'search for a conversation', 'adapted_keywords': {'search': True}}
+{'widget': 'gear icon', 'frozen': 'go to next', 'adapted': 'go to next', 'adapted_keywords': {'settings': False}}
+{'widget': 'Ana avatar', 'frozen': 'select ana', 'adapted': 'select ana', 'adapted_keywords': {'ana': True}}
+{'widget': 'Profile tab', 'frozen': 'profile', 'adapted': 'go to profile', 'adapted_keywords': {'profile': True}}
+{'artifact': 'outputs/pix2struct_ui_captioning_adapter', 'format': 'org.valcorza.pix2struct-widget-captioning-base.adapter.v1', 'tensors': 29, 'bytes': 75522608, 'sha256': 'f1fe5cb24a212346...'}
+{'reload_parity': {'identical_captions': 8, 'of': 8, 'reloaded_captions_differing_from_frozen': 0}, 'reloaded_best_epoch': 3, 'note': 'reloaded_captions_differing_from_frozen says whether parity shows the adapter applied (> 0) or only the base reproduced (0, expected when the selector kept epoch 0)'}
+['pix2struct_ui_captioning_adapter', 'pix2struct_ui_captioning_captions.csv', 'pix2struct_ui_captioning_evaluation_report.json', 'pix2struct_ui_captioning_input_manifest.json', 'pix2struct_ui_captioning_result.json', 'pix2struct_ui_captioning_train.jsonl']
+[colab] Executing cell 13/13 - pix2struct_ui_captioning-33...
+{'box_experiment': 'skipped (set RUN_BOX_EXPERIMENT = True to run it); nothing was trained or written'}
+[colab] Saving notebook with outputs to '/home/kurt/colab-runs/pix2struct-ui-captioning-pipeline-c020a97-9aa8c4/pix2struct_ui_captioning_colab_c020a97_colab-cli-t4_output.ipynb'...
