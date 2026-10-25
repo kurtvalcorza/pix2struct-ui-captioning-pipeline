@@ -182,7 +182,7 @@ def test_psu_m4_prose_numbers_match_the_recorded_run(nb: dict) -> None:
 def test_psu_m6_prerequisites_state_t4_and_cpu_durations(nb: dict) -> None:
     """PSU-m6: the Prerequisites give the recorded T4 wall time and a CPU figure labelled as an estimate."""
     prereq = next(_src(c) for c in nb["cells"] if c["cell_type"] == "markdown" and _src(c).startswith("## Prerequisites"))
-    assert "**1,292.2 s**" in prereq and "Tesla T4" in prereq
+    assert "**about 21½ minutes**" in prereq and "Tesla T4" in prereq
     assert "CPU has not been timed" in prereq and "not a measurement" in prereq
     assert re.search(r"(minutes|hours?)\b.*CPU|CPU.*\b(minutes|hours?)", prereq)
     assert "1292.2 s" in (ROOT / "docs" / "release-verification.md").read_text(encoding="utf-8")
