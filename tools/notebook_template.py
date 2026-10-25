@@ -374,7 +374,7 @@ TEMPLATE = {
                 "precision with a brevity penalty), **ROUGE-L** (longest-common-subsequence F-measure against the best "
                 "reference), **CIDEr-D** (TF-IDF-weighted n-gram consensus over all references, the metric Widget Captioning is "
                 "ranked by) and the plumbing check **unigram F1**, all after lower-casing and punctuation removal. The "
-                "checkpoint was fine-tuned on Widget Captioning's training apps, so expect it well above both baselines; the "
+                "checkpoint was fine-tuned on Widget Captioning's training apps; the "
                 "cell records whether it beats the constant caption as `frozen_beats_constant` (a verdict, not an assert, so a BYOD run still "
                 "exports). If `pipe` was adapted by an earlier run of Section 7, the cell first reloads the frozen pipeline from the verified "
                 "snapshot (Section 7 does the same). Read the per-category breakdown: icons (`small-widget`) "
