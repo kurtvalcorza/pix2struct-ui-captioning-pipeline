@@ -156,7 +156,9 @@ The rows below are the earlier inference-only notebook's runs; they are history 
 
 ## Current status
 
-**Candidate.** The notebook was regenerated at `c020a97` (blob `cf909dbcd4e5`) and that exact blob passed the Colab CLI Tesla T4
+**Current status (2026-10-25): Candidate, hosted runs pending (REL14).** The current notebook `tutorials/pix2struct_ui_captioning_colab.ipynb` is blob `820076d362813ae7bd780a85728abf4b020a3bc2`, regenerated from generator commit `2217961` for the tier C review findings of row 65. No hosted run of this blob exists yet; every run recorded below is evidence for an earlier blob only. Changes: T65-1 (REL13) defines the recorded run as the Colab T4 run of blob `cf909dbc` (`c020a97`, 2026-10-08: fine-tune 654.8 s, 0 of 8 reloaded captions differing from frozen) and labels the 2026-09-26 Kaggle run of blob `2e28896c`; T65-2 says that a zero differing-caption count is inconclusive (the recorded run kept epoch 3 and printed 0), so parity there shows a faithful reload, not an applied adapter; T65-3 declares Notebook Specification 2.5 with `notebook_kind: TUTORIAL`, a use notice, IEEE references and the documented `DIMER_ISOLATED_ENV`. Local checks (generator `--check`, `tools/validate_release_assets.py`, ruff, pytest against the `main` baseline) are source checks, not clean-runtime evidence.
+
+**Previous blob — Candidate.** The notebook was regenerated at `c020a97` (blob `cf909dbcd4e5`) and that exact blob passed the Colab CLI Tesla T4
 run recorded above (2026-10-08 UTC, 13/13 code cells, 1188.3 s, one pass, no restart, 0 errors, default path only), reproducing
 the recorded held-out numbers; promotion to Release-grade is a review decision for the exact release revision. The earlier
 Release-grade record identifies blob `2e28896c` (committed at `0edb5de`, generated at `6583937`) only and remains history. The Widget Captioning shard is pinned (95,313,640 bytes, SHA-256
