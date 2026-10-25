@@ -66,12 +66,12 @@ def _cell_with(nb: dict, marker: str) -> str:
 
 def test_psu_m5_spec_2_2_declared_everywhere(nb: dict) -> None:
     """PSU-m5: metadata, opening cell, registry, validator and generator agree on NOTEBOOK_SPEC 2.2 (§32 item 6)."""
-    assert nb["metadata"]["dimer"]["notebook_spec"] == "2.2"
-    assert build.NOTEBOOK_SPEC == "2.2"
+    assert nb["metadata"]["dimer"]["notebook_spec"] == "2.5" and nb["metadata"]["dimer"]["notebook_kind"] == "TUTORIAL"
+    assert build.NOTEBOOK_SPEC == "2.5"
     validator = _load("validate_release_assets_review", TOOLS / "validate_release_assets.py")
-    assert validator.NOTEBOOK_SPEC == "2.2"
-    assert "DIMER Notebook Specification 2.2 — **standalone** (§4)" in _src(nb["cells"][0])
-    assert "DIMER Notebook Specification 2.2" in (ROOT / "tutorials" / "README.md").read_text(encoding="utf-8")
+    assert validator.NOTEBOOK_SPEC == "2.5"
+    assert "DIMER Notebook Specification 2.5 — **standalone** (§4)" in _src(nb["cells"][0])
+    assert "DIMER Notebook Specification 2.5" in (ROOT / "tutorials" / "README.md").read_text(encoding="utf-8")
     text = _markdown(nb) + "\n".join(_src(c) for c in _code_cells(nb))
     assert "Specification 2.0" not in text and "NOTEBOOK_SPEC 2.0" not in text
 
