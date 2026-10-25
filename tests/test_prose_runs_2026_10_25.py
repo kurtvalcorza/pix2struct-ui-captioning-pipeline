@@ -17,6 +17,17 @@ def _markdown():
 
 def test_timings_are_approximate_and_name_the_runtime():
     md = _markdown()
-    for exact in ("654.8 s", "646.6 s", "612.4 s", "612 s", "1,292.2 s"):
-        assert exact not in md, exact
-    assert "about 11 minutes of fine-tuning on a Colab T4" in md and "`820076d3`" in md
+    # Historical wording (2026-10-26): exact recorded times are allowed again, each labelled with its run.
+    assert "640.0–654.8 s of fine-tuning in the three Colab T4 runs" in md and "`820076d3`" in md
+
+
+def test_historical_wording_records_every_hosted_run():
+    # Historical wording (2026-10-26): timings are records of every named hosted run; the BLEU-4 delta is the
+    # printed -0.134; no "has not been timed" status. Fails on PR #10 head 372548d.
+    md = _markdown()
+    for gone in ("about 11 minutes", "about 21½ minutes", "has not been timed", "−0.133",
+                 "the expected outcome"):
+        assert gone not in md, gone
+    for quoted in ("1,188.3 s, 1,180.8 s and 1,161.8 s", "`a17c3510` (commit `0383932`, 25 October 2026)",
+                   "printed `delta_vs_frozen` −0.134", "Your run may take a different time."):
+        assert quoted in md, quoted
