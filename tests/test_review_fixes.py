@@ -66,12 +66,12 @@ def _cell_with(nb: dict, marker: str) -> str:
 
 def test_psu_m5_spec_2_2_declared_everywhere(nb: dict) -> None:
     """PSU-m5: metadata, opening cell, registry, validator and generator agree on NOTEBOOK_SPEC 2.2 (§32 item 6)."""
-    assert nb["metadata"]["dimer"]["notebook_spec"] == "2.2"
-    assert build.NOTEBOOK_SPEC == "2.2"
+    assert nb["metadata"]["dimer"]["notebook_spec"] == "2.5" and nb["metadata"]["dimer"]["notebook_kind"] == "TUTORIAL"
+    assert build.NOTEBOOK_SPEC == "2.5"
     validator = _load("validate_release_assets_review", TOOLS / "validate_release_assets.py")
-    assert validator.NOTEBOOK_SPEC == "2.2"
-    assert "DIMER Notebook Specification 2.2 — **standalone** (§4)" in _src(nb["cells"][0])
-    assert "DIMER Notebook Specification 2.2" in (ROOT / "tutorials" / "README.md").read_text(encoding="utf-8")
+    assert validator.NOTEBOOK_SPEC == "2.5"
+    assert "DIMER Notebook Specification 2.5 — **standalone** (§4)" in _src(nb["cells"][0])
+    assert "DIMER Notebook Specification 2.5" in (ROOT / "tutorials" / "README.md").read_text(encoding="utf-8")
     text = _markdown(nb) + "\n".join(_src(c) for c in _code_cells(nb))
     assert "Specification 2.0" not in text and "NOTEBOOK_SPEC 2.0" not in text
 
@@ -183,7 +183,7 @@ def test_psu_m6_prerequisites_state_t4_and_cpu_durations(nb: dict) -> None:
     """PSU-m6: the Prerequisites give the recorded T4 wall time and a CPU figure labelled as an estimate."""
     prereq = next(_src(c) for c in nb["cells"] if c["cell_type"] == "markdown" and _src(c).startswith("## Prerequisites"))
     assert "**1,292.2 s**" in prereq and "Tesla T4" in prereq
-    assert "CPU has not been timed" in prereq and "not a measurement" in prereq
+    assert "estimated at **well over an hour**" in prereq and "not a measurement" in prereq
     assert re.search(r"(minutes|hours?)\b.*CPU|CPU.*\b(minutes|hours?)", prereq)
     assert "1292.2 s" in (ROOT / "docs" / "release-verification.md").read_text(encoding="utf-8")
 
