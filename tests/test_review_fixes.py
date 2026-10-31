@@ -246,7 +246,7 @@ def _imgs(n: int, folder: str = "") -> list[tuple[str, bytes]]:
 
 def _byod_branch(nb: dict) -> str:
     source = _cell_with(nb, "BYOD_PATH = ''  # @param")
-    body = source.split("\nif USE_BYOD:\n", 1)[1].split("\nelse:\n", 1)[0]
+    body = source.split("\n    if USE_BYOD:\n", 1)[1].split("\n    else:\n", 1)[0]  # DAT20: the branch sits inside the refusal wrap
     return textwrap.dedent(body)
 
 
@@ -268,6 +268,8 @@ def _run_byod(nb: dict, work: Path, payload: bytes) -> dict:
             "load_byod_dataset": load_byod_dataset, "split_dataset": split_dataset, "BYOD_PATH": str(zip_path),
             "byod_file": lambda path, kind, suffixes=(): Path(path),
         }
+        source = _cell_with(nb, "BYOD_PATH = ''  # @param")
+        exec(source[source.index("class BYODRefusal(ValueError):") : source.index("# What an earlier run")], ns)  # DAT20: the refusal class
         with contextlib.redirect_stdout(io.StringIO()):
             exec(compile(_byod_branch(nb), "<byod>", "exec"), ns)
     finally:
