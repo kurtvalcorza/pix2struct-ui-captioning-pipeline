@@ -260,3 +260,81 @@ def test_scripted_refusal_input_is_the_real_etc_hostname(monkeypatch, tmp_path):
         _section4(monkeypatch, tmp_path, "/etc/hostname")
     line = _refusal_line(caught.value)
     assert line.startswith("Refused: hostname: expected a zip of ") and "ending in .zip" in line
+
+
+# --- the catch is narrow: only bad input is refused; an internal TypeError/KeyError/OSError keeps its traceback ----
+
+
+def test_the_byod_catch_is_narrow_in_the_notebook_source():
+    import re
+
+    source = _cell(BYOD_CELL)
+    wrap = source[source.index("try:\n    if USE_BYOD:") : source.index("train_records, val_records, test_records = splits")]
+    assert re.findall(r"^\s*except (.+?)(?: as \w+)?:$", wrap, flags=re.M) == ["(OSError, zipfile.BadZipFile)", "(OSError, zipfile.BadZipFile)", "OSError", "BYODRefusal", "ValueError"]
+    assert "        try:\n            archive = zipfile.ZipFile(io.BytesIO(byod_zip.read_bytes()))\n        except (OSError, zipfile.BadZipFile) as exc:\n" in wrap
+    assert "                try:\n                    member_bytes = archive.read(member)\n                except (OSError, zipfile.BadZipFile) as exc:\n" in wrap
+    assert "        try:\n            records = load_byod_dataset(records_file)\n        except OSError as exc:\n" in wrap
+    assert "except ValueError as exc:\n    if not USE_BYOD:\n        raise\n" in wrap
+
+
+@pytest.mark.parametrize("case", ["not a zip", "bad CRC"])
+def test_an_unreadable_or_corrupt_zip_is_still_one_refused_line(monkeypatch, tmp_path, case):
+    monkeypatch.setitem(sys.modules, "google.colab", None)
+    if case == "not a zip":
+        data, rule = b"not a zip at all", "the zip cannot be read (BadZipFile: File is not a zip file)"
+    else:
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as archive:
+            archive.writestr("records.jsonl", "x" * 64)
+        data = bytearray(buffer.getvalue())
+        data[data.index(b"x" * 64)] = ord("y")  # the stored bytes no longer match their CRC-32
+        data, rule = bytes(data), "the zip cannot be read (BadZipFile: Bad CRC-32"
+    (tmp_path / "bad.zip").write_bytes(data)
+    with pytest.raises(ValueError) as caught:
+        _section4(monkeypatch, tmp_path, str(tmp_path / "bad.zip"))
+    line = _refusal_line(caught.value)
+    assert line.startswith(f"Refused: bad.zip: {rule}") and line.count("Refused:") == 1, line
+    assert sorted(p.name for p in (tmp_path / "outputs").iterdir()) == []
+
+
+def test_an_unreadable_records_file_is_still_one_refused_line(monkeypatch, tmp_path):
+    monkeypatch.setitem(sys.modules, "google.colab", None)
+    (tmp_path / "ok.zip").write_bytes(_zip({"records.jsonl": b"{}"}))
+
+    def unreadable(_path):
+        raise PermissionError(13, "Permission denied", str(_path))
+
+    with pytest.raises(ValueError) as caught:
+        _section4(monkeypatch, tmp_path, str(tmp_path / "ok.zip"), extra={"load_byod_dataset": unreadable})
+    assert _refusal_line(caught.value).startswith("Refused: ok.zip: the file cannot be read (PermissionError: ")
+
+
+def test_a_typeerror_inside_the_records_loader_is_not_turned_into_a_refusal(monkeypatch, tmp_path):
+    monkeypatch.setitem(sys.modules, "google.colab", None)
+    (tmp_path / "ok.zip").write_bytes(_zip({"records.jsonl": b"{}"}))
+
+    def buggy_loader(_path):
+        raise TypeError("loader bug")
+
+    with pytest.raises(TypeError, match="loader bug") as caught:
+        _section4(monkeypatch, tmp_path, str(tmp_path / "ok.zip"), extra={"load_byod_dataset": buggy_loader})
+    assert not getattr(caught.value, "dimer_refusal", False)
+    assert (tmp_path / "outputs" / f"{STEM}_result.json").exists()  # nothing is removed for an internal error
+
+
+@pytest.mark.parametrize("error", [TypeError("internal helper bug"), KeyError("internal key"), OSError("internal I/O bug")], ids=["TypeError", "KeyError", "OSError"])
+def test_an_internal_error_after_the_loader_keeps_its_traceback(monkeypatch, tmp_path, error):
+    import traceback
+
+    monkeypatch.setitem(sys.modules, "google.colab", None)
+    (tmp_path / "ok.zip").write_bytes(_zip({"records.jsonl": b"{}"}))
+
+    def broken_split(records, **kwargs):
+        raise error
+
+    with pytest.raises(type(error)) as caught:
+        _section4(monkeypatch, tmp_path, str(tmp_path / "ok.zip"), extra={"load_byod_dataset": lambda _path: [{}], "split_dataset": broken_split})
+    assert caught.value is error and not getattr(caught.value, "dimer_refusal", False)
+    rendered = "".join(traceback.format_exception(caught.value))
+    assert rendered.startswith("Traceback") and "broken_split" in rendered and "Refused:" not in rendered
+    assert (tmp_path / "outputs" / f"{STEM}_result.json").exists()  # nothing is removed for an internal error
